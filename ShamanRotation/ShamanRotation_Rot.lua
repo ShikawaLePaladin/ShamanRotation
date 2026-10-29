@@ -46,6 +46,10 @@ function SH.ClAllowed(now, mana, aoe, clearcast)
 	local mode = CFG.clMode
 	if mode == "off" then return false end
 	if mode == "on" then return true end
+	if mode == "aoe" then
+		-- multi-cibles seulement : AoE active, ou plusieurs ennemis a portee de saut ; jamais sur une seule cible
+		return (aoe or (SH.autoN ~= nil and SH.autoN >= CFG.clMinTargets)) and true or false
+	end
 	if aoe or clearcast then return true end
 	if SH.autoN and SH.autoN >= CFG.clMinTargets then return true end   -- plusieurs ennemis a portee de saut
 	if SH.PlayerBuff(SH.IDS.em) ~= nil then return true end              -- Elemental Mastery : -20 % de mana
@@ -198,12 +202,12 @@ function ShamanRotation_AoeToggle()
 	SH.Print("Mode AoE : " .. nxt .. ((nxt == "auto") and " (selon le nombre d'ennemis)" or ""))
 end
 
--- bascule Chain Lightning : auto -> toujours -> jamais -> auto
+-- bascule Chain Lightning : multi-cibles -> auto -> toujours -> jamais -> multi-cibles
 function ShamanRotation_ClToggle()
 	local m = SH.CFG.clMode
-	local nxt = (m == "auto") and "on" or ((m == "on") and "off" or "auto")
+	local nxt = (m == "aoe") and "auto" or ((m == "auto") and "on" or ((m == "on") and "off" or "aoe"))
 	SH.SetSetting("clMode", nxt)
-	local txt = { auto = "AUTO (economise la mana : plusieurs cibles, Clearcasting, Elemental Mastery, ou mana > " .. string.format("%.0f", SH.CFG.clMonoMana * 100) .. " %)",
+	local txt = { aoe = "MULTI-CIBLES SEULEMENT (jamais sur une seule cible)", auto = "AUTO (economise la mana : plusieurs cibles, Clearcasting, Elemental Mastery, ou mana > " .. string.format("%.0f", SH.CFG.clMonoMana * 100) .. " %)",
 		on = "TOUJOURS (a chaque retour de recharge)", off = "JAMAIS" }
 	SH.Print("Chain Lightning : " .. txt[nxt])
 	if SH.RefreshOptions then SH.RefreshOptions() end

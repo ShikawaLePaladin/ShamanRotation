@@ -12,7 +12,7 @@ SH.HELP = {
 	fsRefresh = "Flame Shock est relance quand il reste moins de ce temps sur le DoT (15 s). Les meilleurs joueurs le relancent toutes les ~10,7 s, soit vers 4 s restantes.",
 	useFs = "Entretient Flame Shock sur la cible (sauf si la cible y est immunisee).",
 	useCl = "Chain Lightning autorise (case maitre). Le MODE (auto / toujours / jamais) se choisit plus bas ou avec la touche dediee.",
-	clMode = "AUTO : economise la mana. Chain Lightning coute 605 mana contre 210 pour Lightning Bolt : sur UNE cible il rapporte ~3 fois moins de degats par mana ; a 3 cibles il est a egalite et fait bien plus de DPS. En auto il part a plusieurs cibles, sous Clearcasting, sous Elemental Mastery, ou tant que ta mana est au-dessus du seuil. TOUJOURS : a chaque retour de recharge (6 s). JAMAIS : coupe.",
+	clMode = "MULTI-CIBLES SEULEMENT (defaut) : Chain Lightning ne part que s'il y a plusieurs ennemis a portee de saut ou en mode AoE, jamais sur une seule cible. AUTO : economise la mana. Chain Lightning coute 605 mana contre 210 pour Lightning Bolt : sur UNE cible il rapporte ~3 fois moins de degats par mana ; a 3 cibles il est a egalite et fait bien plus de DPS. En auto il part a plusieurs cibles, sous Clearcasting, sous Elemental Mastery, ou tant que ta mana est au-dessus du seuil. TOUJOURS : a chaque retour de recharge (6 s). JAMAIS : coupe.",
 	clMonoMana = "Mode AUTO, une seule cible : Chain Lightning seulement s'il te reste au moins ce pourcentage de ta mana MAX apres l'avoir lance (son cout reel est appris sur tes lancers). Plus ta reserve de mana est petite, plus ce sort pese lourd.",
 	manaSaver = "Les sorts chers (Flame Shock, Chain Lightning, Earthquake) ne partent que s'il reste une reserve de mana APRES le lancer. Le cout reel de chaque sort est appris sur tes propres lancers (mediane des 5 derniers). Decoche pour l'ancien comportement.",
 	fsMana = "Flame Shock (410 mana, ~4 fois moins de degats par mana que Lightning Bolt) : lance seulement s'il reste cette fraction de ta mana max apres.",
@@ -381,8 +381,8 @@ function SH.BuildRotation(cont)
 	local ms = SH.AddCheck("ManaSaver", cont, s3, -18, "Economie de mana : gros sorts seulement s'il reste une reserve APRES le lancer", "manaSaver")
 	local s3b = SH.AddSlider(cont, ms, -24, "fsMana", "Flame Shock : reserve apres le lancer", 0, 80, 5, " %", true)
 	local s3c = SH.AddSlider(cont, s3b, -26, "eqMana", "Earthquake : reserve apres le lancer", 0, 80, 5, " %", true)
-	local ccl = SH.AddCycle("clmode", cont, s3c, -22, "clMode", "Chain Lightning", { "auto", "on", "off" },
-		{ auto = "AUTO (economise la mana)", on = "TOUJOURS (a chaque recharge)", off = "JAMAIS" })
+	local ccl = SH.AddCycle("clmode", cont, s3c, -22, "clMode", "Chain Lightning", { "aoe", "auto", "on", "off" },
+		{ aoe = "MULTI-CIBLES SEULEMENT (pas en mono)", auto = "AUTO (economise la mana)", on = "TOUJOURS (a chaque recharge)", off = "JAMAIS (meme en AoE)" })
 	ccl:SetWidth(420)
 	local s4 = SH.AddSlider(cont, ccl, -26, "clMonoMana", "Chain Lightning (1 cible) : reserve apres le lancer", 10, 90, 5, " %", true)
 	local s5 = SH.AddSlider(cont, s4, -26, "clMinTargets", "Auto : des que cet nombre d'ennemis est proche", 2, 5, 1, "")
@@ -884,8 +884,12 @@ function SH.HudUpdate()
 	if SH.CFG.clMode == "off" then
 		ic.cl.tex:SetVertexColor(0.7, 0.2, 0.2)
 		ic.cl.txt:SetText("OFF")
-	elseif SH.CFG.clMode == "auto" and not (rCl and rCl > 0.05) then
-		ic.cl.txt:SetText("A")
+	elseif not (rCl and rCl > 0.05) then
+		if SH.CFG.clMode == "auto" then ic.cl.txt:SetText("A") end
+		if SH.CFG.clMode == "aoe" and not (SH.AoeOn() or (SH.autoN ~= nil and SH.autoN >= SH.CFG.clMinTargets)) then
+			ic.cl.tex:SetVertexColor(0.6, 0.6, 0.35)
+			ic.cl.txt:SetText("AoE")
+		end
 	end
 	local _, rEq = SH.CdInfo(S.eq)
 	setCd(ic.eq, rEq)

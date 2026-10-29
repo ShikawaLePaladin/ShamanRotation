@@ -75,3 +75,5 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
   Les seuils sont des REGLAGES, pas des valeurs mesurees.
 * Bug trouve dans la meme trace : Water Shield relance toutes les 3 s a 100 % de mana (buff non reconnu). Ajouts : repli par infobulle (nom du buff), temporisation exponentielle (3, 6, 12... 120 s)
   et enregistrement d'un diagnostic (icones + ID des buffs vus) dans ShamanRotationDB.shieldDiag pour corriger la detection.
+
+* clMode par defaut = "aoe" (2026-10-29) : Chain Lightning seulement a plusieurs cibles / en AoE, jamais en mono ; "auto" = economise la mana ; "on" = a chaque recharge ; "off" = jamais (meme en AoE).

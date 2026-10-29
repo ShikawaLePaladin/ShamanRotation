@@ -12,6 +12,7 @@ local function fresh(opts)
   SH.enemies = { list = {}, plates = 0, known = false, at = -10 }
   SH.castsByGuid = {}
   for k, v in pairs(SH.DEFAULTS) do CFG[k] = v end
+  CFG.clMode = "on"   -- les suites de rotation de base supposent Chain Lightning a chaque recharge ; les modes ont leur suite plus bas
   CFG.shield = "off"   -- les autres suites testent la rotation sans bouclier ; les boucliers ont leur suite plus bas
   SH.shieldTry = -10; SH.shieldTick = -10
 end
@@ -372,12 +373,14 @@ SIM.run(10, 0.1); eq(SIM.count("Chain Lightning"), 0, "mode toujours mais mana s
 -- case maitre
 fresh(); CFG.clMode = "on"; CFG.useCl = false; SIM.run(10, 0.1); eq(SIM.count("Chain Lightning"), 0, "case maitre decochee : jamais")
 -- bascule
-fresh(); eq(CFG.clMode, "auto", "defaut : auto")
+eq(SH.DEFAULTS.clMode, "aoe", "defaut : multi-cibles seulement")
+fresh(); CFG.clMode = "aoe"
+ShamanRotation_ClToggle(); eq(CFG.clMode, "auto", "bascule -> auto")
 ShamanRotation_ClToggle(); eq(CFG.clMode, "on", "bascule -> toujours")
 ShamanRotation_ClToggle(); eq(CFG.clMode, "off", "bascule -> jamais")
-ShamanRotation_ClToggle(); eq(CFG.clMode, "auto", "bascule -> auto")
+ShamanRotation_ClToggle(); eq(CFG.clMode, "aoe", "bascule -> multi-cibles")
 SH.Slash("cl off"); eq(CFG.clMode, "off", "/shamrot cl off")
-SH.Slash("cl"); eq(CFG.clMode, "auto", "/shamrot cl : bascule")
+SH.Slash("cl aoe"); eq(CFG.clMode, "aoe", "/shamrot cl aoe")
 
 
 
@@ -385,7 +388,7 @@ SH.Slash("cl"); eq(CFG.clMode, "auto", "/shamrot cl : bascule")
 
 -- ===== economie de mana : cout appris + reserve APRES le lancer (petite reserve : un Chain Lightning pese lourd)
 local function pool(max, frac)
-  fresh(); W.manaMax = max; W.mana = max * frac
+  fresh(); CFG.clMode = "auto"; W.manaMax = max; W.mana = max * frac
 end
 -- reserve 1700 : Chain Lightning (605) = 36 % de la barre
 pool(1700, 0.95); CFG.useFs = false; SIM.run(10, 0.1)
@@ -418,5 +421,16 @@ SH.shieldMiss = 0; SH.shieldWait = 3; SH.shieldCast = nil; SH.shieldSeen = false
 for _ = 1, 60 do Pump(1) end
 ok(SIM.attempts("Water Shield") >= 3 and SIM.attempts("Water Shield") <= 6, "bouclier non reconnu : lancers espaces (" .. SIM.attempts("Water Shield") .. " en 60 s au lieu de 20)")
 ok(ShamanRotationDB.shieldDiag ~= nil, "diagnostic enregistre (buffs vus)")
+
+-- ===== mode multi-cibles seulement : jamais sur une seule cible, toujours quand il y a plusieurs ennemis
+fresh(); CFG.clMode = "aoe"; W.manaMax = 90000; W.mana = 90000
+SIM.run(30, 0.1); eq(SIM.count("Chain Lightning"), 0, "mode multi-cibles, une cible, mana pleine : jamais de Chain Lightning")
+ok(SIM.count("Lightning Bolt") >= 5, "... la rotation tourne en Lightning Bolt")
+fresh(); CFG.clMode = "aoe"; W.manaMax = 90000; W.mana = 90000; PLATES = { { guid = "0xA", dist = 0 }, { guid = "0xB", dist = 5 } }
+SIM.run(12, 0.1); ok(SIM.count("Chain Lightning") >= 1, "mode multi-cibles, 2 ennemis proches : Chain Lightning")
+fresh(); CFG.clMode = "aoe"; CFG.aoeMode = "on"; W.manaMax = 90000; W.mana = 90000
+SIM.run(12, 0.1); ok(SIM.count("Chain Lightning") >= 1, "mode multi-cibles + AoE active : Chain Lightning")
+fresh(); CFG.clMode = "aoe"; W.manaMax = 90000; W.mana = 90000; SIM.addBuff("Interface\\Icons\\Spell_Nature_Lightning", 45542, 1, 30)
+SIM.run(8, 0.1); eq(SIM.count("Chain Lightning"), 0, "mode multi-cibles : meme sous Clearcasting, pas de Chain Lightning en mono")
 
 DONE()

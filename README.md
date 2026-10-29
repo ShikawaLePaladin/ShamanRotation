@@ -12,7 +12,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 ## What it does
 | | |
 |---|---|
-| **Rotation** | Flame Shock kept up (15 s DoT, refreshed near 4 s left) > Chain Lightning (mana-aware: **auto** / always / off, one key to toggle) > Lightning Bolt filler. Earth Shock is used to **interrupt** (the top players only cast it ~2 times a minute). |
+| **Rotation** | Flame Shock kept up (15 s DoT, refreshed near 4 s left) > Chain Lightning (**multi-target only** by default; modes: multi-target / mana-aware auto / always / off, one key to toggle) > Lightning Bolt filler. Earth Shock is used to **interrupt** (the top players only cast it ~2 times a minute). |
 | **AoE** | Automatic from N enemies within 10 m **of the target** (nameplates + UnitXP), or forced on/off. Earthquake (hits the target and 10 m around it) then Chain Lightning. |
 | **Immunities** | Learned from the game's "X is immune" message and remembered per mob. `/shamrot immune fire|nature|frost` to set by hand. No hard-coded list. |
 | **Burst** | Elemental Mastery + Blood Fury (instant, no GCD), optional trinkets. Arms itself if they are on cooldown. |
