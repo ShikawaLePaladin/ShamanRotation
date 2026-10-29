@@ -372,3 +372,10 @@ UseContainerItem = function(bag, slot)
 end
 
 GetBindingAction = function(key) for n, k in pairs(W.bindings) do if k == key then return n end end return "" end
+
+-- noms / existence des unites designees par GUID de plaque (totems) : ShamanRotation
+do
+  local origName, origExists = UnitName, UnitExists
+  UnitName = function(u) local p = plateOf(u); if p and p.name then return p.name end return origName(u) end
+  UnitExists = function(u) local p = plateOf(u); if p then if p.gone then return nil end return 1, u end return origExists(u) end
+end

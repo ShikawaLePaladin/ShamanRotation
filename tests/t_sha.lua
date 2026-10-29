@@ -274,4 +274,65 @@ fresh(); CFG.shield = "water"; W.combat = false; W.dead = true; Pump(6); eq(SIM.
 fresh(); SH.Slash("set shield earth"); eq(CFG.shield, "earth", "/shamrot set shield earth")
 SH.Slash("set shield water")
 
+
+
+-- ===== totems trop loin / detruits : repose automatique (UnitXP + plaques de nom)
+local function tplates(d1, d2, d3, names)
+  PLATES = {
+    { guid = "0xSOE", name = "Strength of Earth Totem V", dist = d1, hostile = false, combat = false },
+    { guid = "0xMS", name = "Mana Spring Totem IV", dist = d2, hostile = false, combat = false },
+    { guid = "0xFT", name = "Flametongue Totem IV", dist = d3, hostile = false, combat = false },
+  }
+end
+local function setupTotems()
+  fresh(); CFG.totemPreset = "melee"; W.combat = false
+  tplates(1, 1, 1)
+  ShamanRotation_TotemsAll()
+  Pump(1.0)
+end
+setupTotems()
+ok(SH.totemGuid.earth ~= nil and SH.totemGuid.water ~= nil and SH.totemGuid.fire ~= nil, "mes totems sont reperes sur les plaques (GUID, a moins de 8 m)")
+ok(SH.totemGuid.air == nil, "Windfury (rayon non verifie) : non surveille")
+local n0 = SIM.count("Strength of Earth Totem")
+Pump(2); eq(SIM.count("Strength of Earth Totem"), n0, "a portee : aucune repose")
+-- je m'eloigne de mon totem de Terre (40 m)
+PLATES[1].dist = 40
+Pump(1.5)
+eq(SIM.count("Strength of Earth Totem"), n0 + 1, "totem a 40 m : repose automatique (hors combat)")
+eq(SIM.count("Mana Spring Totem"), 1, "... les totems a portee ne sont pas reposes")
+-- le nouveau totem apparait pres de moi ; l'ancien reste la-bas
+PLATES[1].dist = 40; table.insert(PLATES, { guid = "0xSOE2", name = "Strength of Earth Totem V", dist = 1, hostile = false, combat = false })
+Pump(2)
+ok(SH.totemGuid.earth and SH.totemGuid.earth.guid == "0xSOE2", "le nouveau totem est repere (pas l'ancien, a 40 m)")
+Pump(4); eq(SIM.count("Strength of Earth Totem"), n0 + 1, "pas de nouvelle repose en boucle")
+-- totem detruit
+setupTotems()
+PLATES[2].gone = true
+Pump(1.5)
+eq(SIM.count("Mana Spring Totem"), 2, "totem detruit : repose automatique")
+-- en combat : pas de repose (option), avec l'option oui
+setupTotems(); W.combat = true; PLATES[1].dist = 40; Pump(2)
+eq(SIM.count("Strength of Earth Totem"), 1, "en combat : pas de repose automatique (option decochee)")
+setupTotems(); W.combat = true; CFG.totemRedropCombat = true; PLATES[1].dist = 40; Pump(2)
+eq(SIM.count("Strength of Earth Totem"), 2, "en combat avec l'option : repose")
+-- option coupee
+setupTotems(); CFG.totemRedrop = false; PLATES[1].dist = 40; Pump(2)
+eq(SIM.count("Strength of Earth Totem"), 1, "repose automatique coupee : rien")
+-- distance reglable
+setupTotems(); CFG.totemRange = 50; PLATES[1].dist = 40; Pump(2)
+eq(SIM.count("Strength of Earth Totem"), 1, "totemRange 50 m : 40 m reste a portee")
+-- sans plaques amicales (totems introuvables) : aucun comportement hasardeux
+fresh(); CFG.totemPreset = "melee"; W.combat = false; PLATES = {}
+ShamanRotation_TotemsAll(); Pump(8)
+ok(next(SH.totemGuid) == nil, "pas de plaques : aucun totem repere")
+eq(SIM.count("Strength of Earth Totem"), 1, "... et aucune repose (le minuteur decide)")
+-- sans UnitXP
+fresh(); CFG.totemPreset = "melee"; W.combat = false; W.noXP = true; tplates(1, 1, 1)
+ShamanRotation_TotemsAll()
+ok(pcall(function() Pump(4) end), "sans UnitXP : aucune erreur")
+eq(SIM.count("Strength of Earth Totem"), 1, "... et aucune repose")
+-- mort : on ne repose pas
+setupTotems(); W.dead = true; PLATES[1].dist = 40; Pump(2)
+eq(SIM.count("Strength of Earth Totem"), 1, "mort : pas de repose"); W.dead = false
+
 DONE()

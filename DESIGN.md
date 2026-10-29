@@ -52,3 +52,9 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
 * Water Shield r5 (51536) : 0 mana, 10 min, 3 charges, GCD normal (133). Chaque attaque qui TOUCHE le chaman (1 fois / 3 s) : +130 mana et une charge. Pas de regeneration passive (l'effet 2, mod regen, vaut 0).
 * Earth Shield r3 (51526) : 300 mana, 10 min, 3 charges. Chaque attaque qui touche : +150 PV ; +30 % de chances de ne pas etre interrompu par les degats. Un seul bouclier elementaire a la fois.
 * Consequence : sans etre touche, aucun des deux ne rapporte quoi que ce soit ; Water coute 0 mana, Earth 300. Water = defaut ; Earth utile quand on prend des coups EN lancant (PvP, adds).
+
+## Totems trop loin (2026-10-29)
+* Rayon des auras de buff = 30 m (Spell.dbc, creatures de totem : Mana Spring 10494, Healing Stream 10461, Strength of Earth 25362, Grace of Air 25360, Tranquil Air 25909, Stoneskin 10405, Flametongue 16388).
+  Windfury, Tremor, purification, Searing, Magma : rayon non verifie, non surveilles.
+* Methode (aucune API 1.12 pour la position d'un totem ; CallOfElements de shaga ne mesure pas la distance, il suit des minuteurs) : le totem apparait sur les plaques de nom a moins de 8 m juste apres la pose ;
+  on retient son GUID, UnitXP("distanceBetween","player",guid) donne la distance, UnitExists / UnitIsDead disent s'il est detruit. Demande UnitXP + SuperWoW + plaques de nom amicales.

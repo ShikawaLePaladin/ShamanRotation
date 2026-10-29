@@ -51,6 +51,9 @@ SH.CFG = {
 	totemsInCombat = false, -- le bouton Totems pose le totem manquant ; en rotation seulement le totem de feu (1 GCD)
 	burstEm = true, burstBf = true, burstTrinkets = false, burstTrinketGcd = false,
 	queueWin = 0.25,        -- on prepare le sort suivant dans les 0,25 s avant la fin de l'incantation (Nampower met en file)
+	totemRedrop = true,     -- repose les totems de buff quand ils sont trop loin de toi (ou detruits) ; demande UnitXP + plaques de nom amicales
+	totemRedropCombat = false, -- ... aussi pendant le combat (sinon seulement hors combat)
+	totemRange = 27,        -- distance maximale a ton totem (m) : le rayon reel de ses auras est de 30 m (Spell.dbc), 3 m de marge
 	shield = "water",       -- bouclier elementaire remis automatiquement : "water" | "earth" | "off"
 	shieldAuto = true,      -- hors combat : remis des qu'il disparait (sauf si tu bois / manges)
 	shieldCombat = true,    -- en combat : remis (1 GCD) quand il est consomme
@@ -433,6 +436,10 @@ SH.tickFrame:SetScript("OnUpdate", function()
 	SH.tickAcc = 0
 	local now = GetTime()
 	local CFG = SH.CFG
+	if SH.TotemWatch and now - (SH.totemWatchAt or -10) >= 0.5 then
+		SH.totemWatchAt = now
+		SH.TotemWatch(now)
+	end
 	-- bouclier elementaire hors combat (1 fois / s suffit)
 	if SH.ShieldStep and now - (SH.shieldTick or -10) >= 1 then
 		SH.shieldTick = now

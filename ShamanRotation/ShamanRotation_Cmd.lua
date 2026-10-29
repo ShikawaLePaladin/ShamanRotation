@@ -15,7 +15,10 @@ local function status()
 	SH.Print("AoE : " .. CFG.aoeMode .. (SH.autoN and (" (" .. SH.autoN .. " ennemi(s) a " .. CFG.aoeRadius .. " m de la cible)") or " (comptage impossible : UnitXP / plaques absents)")
 		.. " -> " .. (SH.AoeOn() and "AOE" or "MONO"))
 	SH.Print("Flame Shock : reste " .. string.format("%.1f", SH.FsRemain()) .. " s sur la cible ; mana " .. string.format("%.0f", SH.ManaPct() * 100) .. " %")
-	SH.Print("Totems (preset " .. CFG.totemPreset .. ") :")
+	local nt = 0
+	local ke
+	for ke in pairs(SH.totemGuid) do nt = nt + 1 end
+	SH.Print("Totems (preset " .. CFG.totemPreset .. ") - reperes sur les plaques (distance mesuree) : " .. nt .. (nt == 0 and " (plaques de nom amicales / UnitXP absents ? seul le minuteur decide)" or "") .. " :")
 	local txt = SH.TotemStatus()
 	local line
 	for line in string.gfind(txt, "[^\n]+") do SH.Print(line) end

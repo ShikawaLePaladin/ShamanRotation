@@ -30,15 +30,18 @@ SH.PRESETS = {
 SH.PRESET_LIST = { "caster", "melee", "aoe", "nova", "fear", "poison", "disease", "off" }
 
 SH.totems = {}          -- [element] = { name, at }
+SH.totemGuid = {}       -- [element] = { guid, name } : le totem repere sur les plaques de nom (UnitXP)
+SH.totemOut = {}        -- [element] = true : totem hors de portee / detruit
 SH.totemTry = -10
 
-function SH.TotemsReset() SH.totems = {} end
+function SH.TotemsReset() SH.totems = {}; SH.totemGuid = {}; SH.totemOut = {}; SH.totemPend = {} end
 
 -- le totem `name` est-il (suppose) en place ? marge de 3 s avant la fin
 function SH.TotemActive(name, now)
 	local info = SH.TOTEM[name]
 	if not info then return false end
 	local t = SH.totems[info[1]]
+	if SH.totemOut[info[1]] then return false end -- trop loin de toi (ou detruit) : a reposer
 	return t ~= nil and t.name == name and now < t.at + info[2] - 3
 end
 
@@ -66,6 +69,8 @@ function SH.PlaceTotem(name, now, multi)
 		-- pose supposee ; confirmee ensuite si le GCD DU TOTEM a demarre (sinon le lancer a ete refuse : la marque est retiree)
 		SH.totemPend[info[1]] = { name = name, at = now, prev = SH.totems[info[1]] }
 		SH.totems[info[1]] = { name = name, at = now }
+		SH.totemGuid[info[1]] = nil
+		SH.totemOut[info[1]] = nil
 	end
 	return true
 end
@@ -206,3 +211,104 @@ SH.totemSeqFrame:SetScript("OnUpdate", function()
 	SH.totemSeqAcc = 0
 	SH.TotemSeqStep(GetTime())
 end)
+
+-- ===================================================================
+-- Surveillance : ton totem est-il trop loin (ou detruit) ? Rayon des auras de buff = 30 m (Spell.dbc : Mana Spring, Healing Stream, Strength of Earth, Grace of Air,
+-- Tranquil Air, Stoneskin, Flametongue). Windfury, Tremor, purification, Searing, Magma : rayon non verifie, pas surveilles.
+-- Methode : juste apres la pose, le totem apparait sur les plaques de nom (GUID) a moins de 8 m de toi : on retient ce GUID, puis UnitXP donne la distance
+-- et UnitExists / UnitIsDead disent s'il est detruit. Demande UnitXP + SuperWoW + plaques de nom AMICALES visibles ; sinon on reste sur le minuteur.
+-- ===================================================================
+SH.TOTEM_RANGE = { ["Mana Spring Totem"] = true, ["Healing Stream Totem"] = true, ["Strength of Earth Totem"] = true, ["Grace of Air Totem"] = true,
+	["Tranquil Air Totem"] = true, ["Stoneskin Totem"] = true, ["Flametongue Totem"] = true }
+SH.totemWatchWarned = false
+SH.totemRedropAt = -10
+
+-- GUIDs des plaques de nom visibles : liste de { guid, name }
+function SH.PlateList()
+	local out = {}
+	if not WorldFrame then return out end
+	local okP, children = pcall(function() return { WorldFrame:GetChildren() } end)
+	if not (okP and children) then return out end
+	local i
+	for i = 1, table.getn(children) do
+		local plate = children[i]
+		local okT, isBtn = pcall(plate.IsObjectType, plate, "Button")
+		local okS, shown = pcall(plate.IsShown, plate)
+		if okT and isBtn and okS and shown then
+			local okG, guid = pcall(plate.GetName, plate, 1)
+			if okG and guid and tostring(guid) ~= "0x0000000000000000" then
+				local okN, nm = pcall(UnitName, guid)
+				if okN and nm then table.insert(out, { guid = guid, name = nm }) end
+			end
+		end
+	end
+	return out
+end
+
+function SH.DistTo(guid)
+	local ok, d = pcall(UnitXP, "distanceBetween", "player", guid)
+	if ok and type(d) == "number" then return d end
+	return nil
+end
+
+function SH.TotemWatch(now)
+	local CFG = SH.CFG
+	if not CFG.totemRedrop or UnitIsDeadOrGhost("player") then return end
+	local el, t
+	-- 1. reperer le GUID des totems poses depuis moins de 5 s
+	for el, t in pairs(SH.totems) do
+		if SH.TOTEM_RANGE[t.name] and not SH.totemGuid[el] and now - t.at >= 0.3 and now - t.at <= 5 then
+			local plates = SH.PlateList()
+			local k, best, bestD = 0, nil, 9
+			for k = 1, table.getn(plates) do
+				if string.find(plates[k].name, t.name, 1, true) then
+					local d = SH.DistTo(plates[k].guid)
+					if d and d < bestD then best = plates[k]; bestD = d end
+				end
+			end
+			if best then SH.totemGuid[el] = { guid = best.guid, name = t.name } end
+		end
+	end
+	-- 2. surveiller ceux qu'on suit : detruit ? trop loin ?
+	local anyOut = false
+	for el, t in pairs(SH.totemGuid) do
+		local gone = false
+		local okE, ex = pcall(UnitExists, t.guid)
+		if (not okE) or not ex then gone = true end
+		if not gone then
+			local okD, dead = pcall(UnitIsDead, t.guid)
+			if okD and dead then gone = true end
+		end
+		if gone then
+			SH.totemGuid[el] = nil
+			SH.totems[el] = nil
+			SH.totemOut[el] = true
+			SH.Say(t.name .. " detruit : a reposer.")
+			anyOut = true
+		else
+			local d = SH.DistTo(t.guid)
+			if d and d > CFG.totemRange then
+				if not SH.totemOut[el] then SH.Say(t.name .. " trop loin (" .. string.format("%.0f", d) .. " m) : a reposer.") end
+				SH.totemOut[el] = true
+				anyOut = true
+			end
+		end
+	end
+	if not anyOut then
+		for el in pairs(SH.totemOut) do
+			if SH.totems[el] and SH.totemGuid[el] then
+				-- reviens a portee : le totem compte a nouveau
+				local d = SH.DistTo(SH.totemGuid[el].guid)
+				if d and d <= CFG.totemRange then SH.totemOut[el] = nil end
+			end
+		end
+	end
+	-- 3. repose automatique
+	if next(SH.totemOut) == nil then return end
+	if SH.totemSeq or now - SH.totemRedropAt < 4 then return end
+	if SH.CFG.totemPreset == "off" or SH.IsMountedNow and SH.IsMountedNow() then return end
+	if UnitAffectingCombat("player") and not CFG.totemRedropCombat then return end
+	if now < SH.castUntil then return end
+	SH.totemRedropAt = now
+	ShamanRotation_TotemsAll()
+end

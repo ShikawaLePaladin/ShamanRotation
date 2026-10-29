@@ -32,6 +32,9 @@ SH.HELP = {
 	shield = "Bouclier elementaire remis automatiquement. WATER SHIELD : 0 mana, chaque attaque qui te touche rend 130 mana (3 charges). EARTH SHIELD : 300 mana, 150 PV par attaque et 30 % de chances de ne pas etre interrompu. Un seul a la fois : le choisi remplace l'autre.",
 	shieldAuto = "Hors combat : remet le bouclier des qu'il disparait (pas pendant que tu bois ou manges, detecte a l'icone du buff).",
 	shieldCombat = "En combat : remet le bouclier quand ses 3 charges sont consommees. Ca coute un GCD de 1,5 s (Water Shield : 0 mana).",
+	totemRedrop = "Repose tout seul un totem de buff quand tu t'en eloignes (rayon des auras : 30 m) ou quand il est detruit. Le totem est repere juste apres sa pose grace aux plaques de nom AMICALES et a UnitXP ; sans eux, seul le minuteur decide. Surveilles : Mana Spring, Healing Stream, Strength of Earth, Grace of Air, Tranquil Air, Stoneskin, Flametongue.",
+	totemRedropCombat = "Autorise la repose automatique pendant le combat (sinon seulement hors combat). Coute de la mana ; les totems ne prennent pas le GCD des sorts.",
+	totemRange = "Distance a partir de laquelle le totem est considere trop loin. Le rayon reel des auras est de 30 m (Spell.dbc) : 27 m laisse une marge de 3 m.",
 	hud = "Affiche l'indicateur : GCD, recharges, minuteur de Flame Shock, totems.",
 	hudLocked = "Verrouille la position de l'indicateur (decoche pour le deplacer a la souris).",
 	hudScale = "Taille de l'indicateur.",
@@ -401,7 +404,10 @@ function SH.BuildTotems(cont)
 	local cy = SH.AddCycle("tot", cont, last, -8, "totemPreset", "Combo", SH.PRESET_LIST, labels)
 	cy:SetWidth(520)
 	local c1 = SH.AddCheck("TotCombat", cont, cy, -6, "La rotation entretient le totem de feu en combat", "totemsInCombat")
-	local b0 = SH.AddButton("totall", cont, c1, -8, "Poser TOUS les totems du combo (d'un coup)", function() ShamanRotation_TotemsAll() end, 320)
+	local r1 = SH.AddCheck("TotRedrop", cont, c1, -2, "Reposer un totem trop loin de moi ou detruit (automatique)", "totemRedrop")
+	local r2 = SH.AddCheck("TotRedropC", cont, r1, -2, "... aussi pendant le combat", "totemRedropCombat")
+	local r3 = SH.AddSlider(cont, r2, -24, "totemRange", "Distance maximale a mon totem", 10, 30, 1, " m")
+	local b0 = SH.AddButton("totall", cont, r3, -14, "Poser TOUS les totems du combo (d'un coup)", function() ShamanRotation_TotemsAll() end, 320)
 	local b1 = SH.AddButton("totbtn", cont, b0, -6, "Poser le totem suivant (un par appui)", function() ShamanRotation_Totems() end, 320)
 	local h = SH.AddHeader(cont, b1, -14, "Etat des totems (minuteur)")
 	SH.totemStatus = SH.AddText(cont, h, -8, "")

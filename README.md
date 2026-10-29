@@ -19,6 +19,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 | **Totems** | Combos: caster, melee, AoE (Magma), Nova, anti-fear (Tremor), poison / disease cleansing. One totem per press **or all four with a single press, in the same frame** (each element has its own GCD category on the server: fire 105, earth 106, water 107, air 108), timers, optional fire-totem upkeep in combat that costs no rotation press. |
 | **Shield** | Water Shield (default) or Earth Shield re-applied automatically when it is gone (out of combat, and in combat for one GCD), not while you drink or ride. |
 | **Relics** | `main` (one relic, equipped out of combat) or `spell` (one relic per spell). **Wait mode only**: equipping in combat costs a 1.5 s GCD (proven in the server source), so the swap takes one press and the spell leaves on the next. |
+| **Totem range** | A buff totem (30 m aura radius) that is too far from you, or destroyed, is re-dropped automatically (out of combat, optionally in combat). Needs UnitXP + friendly nameplates to find your totem; otherwise only the timer decides. |
 | **HUD** | GCD bar, Flame Shock timer, shock / Chain Lightning / Earthquake / Elemental Mastery / Blood Fury cooldowns, the four totem slots. |
 | **Menu** | Fixed-size window with scrolling tabs, tooltips with the default value on every option, minimap button. |
 
