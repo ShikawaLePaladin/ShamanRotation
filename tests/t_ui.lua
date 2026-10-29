@@ -122,6 +122,67 @@ ok(SH.keyCap:IsShown(), "clic sur le bouton : capture ouverte")
 press("ESCAPE")
 -- menu : liaison
 ok(type(ShamanRotation_OpenMenu) == "function", "fonction ShamanRotation_OpenMenu (liaison Ouvrir le menu)")
-eq(table.getn(SH.KEYROWS), 7, "7 actions liables (dont Chain Lightning)")
+eq(table.getn(SH.KEYROWS), 8, "8 actions liables (dont Chain Lightning ON/OFF et mode)")
+
+-- ===== boutons a l'ecran (comme le paladin / le guerrier)
+SIM.setup(); SIM.load(nil)
+Fire("PLAYER_LOGIN")
+ok(ShamanRotationButtons ~= nil, "rangee de boutons creee")
+local function click(b, mouse) this = b; arg1 = mouse or "LeftButton"; b.scripts.OnClick() end
+local cl, aoe, burst, tot = SH.btns.cl, SH.btns.aoe, SH.btns.burst, SH.btns.totems
+ok(cl and aoe and burst and tot, "4 boutons : Chain Lightning, AoE, Burst, Totems")
+ok(cl:IsShown() and aoe:IsShown() and burst:IsShown() and tot:IsShown(), "les 4 boutons sont affiches")
+-- Chain Lightning : clic gauche = ACTIVER / COUPER
+eq(CFG.useCl, true, "Chain Lightning actif au depart")
+click(cl); eq(CFG.useCl, false, "clic : Chain Lightning COUPE")
+eq(cl.big:GetText(), "OFF", "le bouton affiche OFF")
+click(cl); eq(CFG.useCl, true, "clic : Chain Lightning ACTIVE")
+ok(cl.txt:GetText() ~= nil and cl.txt:GetText() ~= "", "le bouton affiche le mode")
+eq(ShamanRotationDB.settings.useCl, true, "... enregistre")
+-- clic droit : change le MODE (multi-cibles -> auto -> toujours -> multi-cibles), jamais 'off'
+CFG.clMode = "aoe"
+click(cl, "RightButton"); eq(CFG.clMode, "auto", "clic droit : auto")
+click(cl, "RightButton"); eq(CFG.clMode, "on", "clic droit : toujours")
+click(cl, "RightButton"); eq(CFG.clMode, "aoe", "clic droit : multi-cibles")
+eq(CFG.useCl, true, "le clic droit ne coupe pas Chain Lightning")
+-- l'interrupteur agit vraiment sur la rotation
+CFG.useCl = false; CFG.clMode = "on"; SIM.setup(); SIM.load(nil)
+for k, v in pairs(SH.DEFAULTS) do CFG[k] = v end
+CFG.clMode = "on"; CFG.shield = "off"; CFG.useCl = false; W.mana = 90000; W.manaMax = 90000
+SIM.run(15, 0.1); eq(SIM.count("Chain Lightning"), 0, "bouton OFF : plus aucun Chain Lightning, meme en mode toujours")
+click(cl); SIM.run(15, 0.1); ok(SIM.count("Chain Lightning") >= 1, "bouton ON : Chain Lightning revient")
+-- touche ON / OFF
+local before = CFG.useCl; ShamanRotation_ClSwitch(); eq(CFG.useCl, not before, "touche ON/OFF : bascule")
+ShamanRotation_ClSwitch()
+-- AoE : clic = auto -> on -> off
+CFG.aoeMode = "auto"; click(aoe); eq(CFG.aoeMode, "on", "bouton AoE : clic -> toujours")
+click(aoe); eq(CFG.aoeMode, "off", "bouton AoE : clic -> jamais")
+click(aoe); eq(CFG.aoeMode, "auto", "bouton AoE : clic -> auto")
+CFG.aoeMode = "on"; SH.ButtonsUpdate(); eq(aoe.big:GetText(), "AOE", "AoE actif : le bouton affiche AOE")
+CFG.aoeMode = "off"; SH.ButtonsUpdate(); eq(aoe.big:GetText(), "MONO", "AoE coupe : le bouton affiche MONO")
+-- Burst et Totems
+SIM.setup(); SIM.load(nil); Fire("PLAYER_LOGIN")
+click(burst); eq(SIM.count("Elemental Mastery"), 1, "bouton Burst : Elemental Mastery lance")
+SH.ButtonsUpdate(); ok(burst.big:GetText() ~= "", "burst en recharge : compte a rebours affiche")
+SIM.setup(); SIM.load(nil); CFG.totemPreset = "melee"
+SH.ButtonsUpdate(); eq(tot.big:GetText(), "4", "totems : 4 manquants")
+click(tot); eq(SIM.count("Strength of Earth Totem"), 1, "bouton Totems : pose le combo")
+Pump(1.0); SH.ButtonsUpdate(); eq(tot.big:GetText(), "", "totems en place : plus de compteur")
+-- configuration : masquer un bouton, tout masquer, taille, verrouillage
+CFG.btnAoe = false; SH.ButtonsRefreshConfig(); ok(not aoe:IsShown() and cl:IsShown(), "bouton AoE masque, les autres restent")
+CFG.btnAoe = true; CFG.buttons = false; SH.ButtonsRefreshConfig(); ok(not ShamanRotationButtons:IsShown(), "boutons masques (option)")
+CFG.buttons = true; CFG.btnScale = 1.5; SH.ButtonsRefreshConfig(); ok(ShamanRotationButtons:IsShown(), "boutons reaffiches, taille 150 %")
+-- deplacement : verrouille -> rien ; deverrouille -> StartMoving + position enregistree
+CFG.btnLocked = true; this = cl; cl.scripts.OnDragStart()
+CFG.btnLocked = false; this = cl; cl.scripts.OnDragStart(); cl.scripts.OnDragStop()
+ok(ShamanRotationDB.pos == nil or ShamanRotationDB.pos.btn ~= nil, "position des boutons enregistree")
+-- info-bulles et mise a jour sans erreur dans tous les etats
+ok(pcall(function() for _, b in pairs(SH.btns) do this = b; b.scripts.OnEnter(); b.scripts.OnLeave() end end), "info-bulles sans erreur")
+ok(pcall(function() W.target = nil; SH.ButtonsUpdate(); W.noXP = true; SH.ButtonsUpdate() end), "mise a jour sans cible / sans UnitXP : aucune erreur")
+-- cases du menu
+SH.OpenMenu(true); SH.ShowTab("affichage")
+ok(ShamanRotOpt_BtnCl ~= nil and ShamanRotOpt_Btns ~= nil and ShamanRotOpt_BtnLock ~= nil, "cases des boutons dans l'onglet Affichage")
+ShamanRotOpt_BtnCl:SetChecked(false); this = ShamanRotOpt_BtnCl; ShamanRotOpt_BtnCl.scripts.OnClick()
+ok(not cl:IsShown(), "case Bouton Chain Lightning decochee : bouton masque")
 
 DONE()

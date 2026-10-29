@@ -14,7 +14,8 @@ BINDING_NAME_SHAMANROT_ROTATION = "Rotation (une touche)"
 BINDING_NAME_SHAMANROT_BURST = "Burst"
 BINDING_NAME_SHAMANROT_TOTEMS = "Totems (combo)"
 BINDING_NAME_SHAMANROT_TOTEMS4 = "Poser tous les totems (combo)"
-BINDING_NAME_SHAMANROT_CL = "Chain Lightning : auto / toujours / jamais"
+BINDING_NAME_SHAMANROT_CL = "Chain Lightning : mode (multi-cibles / auto / toujours / jamais)"
+BINDING_NAME_SHAMANROT_CLSWITCH = "Chain Lightning : ACTIVER / COUPER"
 BINDING_NAME_SHAMANROT_AOE = "Mode AoE (bascule)"
 BINDING_NAME_SHAMANROT_MENU = "Ouvrir le menu"
 
@@ -67,6 +68,8 @@ SH.CFG = {
 	shieldMinCharges = 1,   -- remis quand il reste moins de ce nombre de charges (1 = seulement quand il a disparu)
 	relicMode = "off",      -- "off" | "main" (une relique, hors combat) | "spell" (une relique par sort, mode wait uniquement)
 	relicMain = "Totem of Crackling Thunder", relicGap = 25, -- relique du mode main ; espacement minimal entre deux echanges en combat (s)
+	buttons = true, btnLocked = false, btnScale = 1.0,                        -- boutons cliquables a l'ecran (Chain Lightning, AoE, Burst, Totems)
+	btnCl = true, btnAoe = true, btnBurst = true, btnTotems = true,
 	hud = true, hudLocked = false, hudScale = 1.0,   -- indicateur (GCD, recharges, DoT, totems)
 	quiet = false, debug = false,
 }

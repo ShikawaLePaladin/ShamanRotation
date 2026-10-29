@@ -41,6 +41,9 @@ SH.HELP = {
 	totemRedrop = "Repose tout seul un totem de buff quand tu t'en eloignes (rayon des auras : 30 m) ou quand il est detruit. Le totem est repere juste apres sa pose grace aux plaques de nom AMICALES et a UnitXP ; sans eux, seul le minuteur decide. Surveilles : Mana Spring, Healing Stream, Strength of Earth, Grace of Air, Tranquil Air, Stoneskin, Flametongue.",
 	totemRedropCombat = "Autorise la repose automatique pendant le combat (sinon seulement hors combat). Coute de la mana ; les totems ne prennent pas le GCD des sorts.",
 	totemRange = "Distance a partir de laquelle le totem est considere trop loin. Le rayon reel des auras est de 30 m (Spell.dbc) : 27 m laisse une marge de 3 m.",
+	buttons = "Affiche une rangee de boutons cliquables a l'ecran. Chain Lightning : clic gauche = ACTIVER / COUPER, clic droit = changer de mode (multi-cibles / auto / toujours). AoE : clic = auto / on / off. Burst : clic = lancer ou armer. Totems : clic = poser tous les totems. Glisser = deplacer (si deverrouille).",
+	btnLocked = "Verrouille la position de la rangee de boutons (decoche pour la deplacer a la souris).",
+	btnScale = "Taille des boutons.",
 	hud = "Affiche l'indicateur : GCD, recharges, minuteur de Flame Shock, totems.",
 	hudLocked = "Verrouille la position de l'indicateur (decoche pour le deplacer a la souris).",
 	hudScale = "Taille de l'indicateur.",
@@ -219,7 +222,8 @@ SH.KEYROWS = {
 	{ "SHAMANROT_BURST", "Burst" },
 	{ "SHAMANROT_TOTEMS", "Totem suivant du combo" },
 	{ "SHAMANROT_TOTEMS4", "Poser tous les totems" },
-	{ "SHAMANROT_CL", "Chain Lightning (bascule)" },
+	{ "SHAMANROT_CLSWITCH", "Chain Lightning ON / OFF" },
+	{ "SHAMANROT_CL", "Chain Lightning : mode" },
 	{ "SHAMANROT_AOE", "Mode AoE (bascule)" },
 	{ "SHAMANROT_MENU", "Ouvrir ce menu" },
 }
@@ -489,7 +493,15 @@ function SH.BuildDisplay(cont)
 	local c1 = SH.AddCheck("Hud", cont, last, -6, "Afficher l'indicateur", "hud")
 	local c2 = SH.AddCheck("HudLock", cont, c1, -2, "Verrouiller la position", "hudLocked")
 	local s1 = SH.AddSlider(cont, c2, -22, "hudScale", "Taille", 50, 200, 10, " %", true)
-	local h = SH.AddHeader(cont, s1, -18, "Minimap")
+	local hb = SH.AddHeader(cont, s1, -18, "Boutons a l'ecran (clic = activer / couper)")
+	local b1 = SH.AddCheck("Btns", cont, hb, -6, "Afficher les boutons", "buttons")
+	local b2 = SH.AddCheck("BtnLock", cont, b1, -2, "Verrouiller la position des boutons", "btnLocked")
+	local b3 = SH.AddCheck("BtnCl", cont, b2, -2, "Bouton Chain Lightning", "btnCl")
+	local b4 = SH.AddCheck("BtnAoe", cont, b3, -2, "Bouton Mono / AoE", "btnAoe")
+	local b5 = SH.AddCheck("BtnBurst", cont, b4, -2, "Bouton Burst", "btnBurst")
+	local b6 = SH.AddCheck("BtnTot", cont, b5, -2, "Bouton Totems", "btnTotems")
+	local bs = SH.AddSlider(cont, b6, -22, "btnScale", "Taille des boutons", 50, 200, 10, " %", true)
+	local h = SH.AddHeader(cont, bs, -18, "Minimap")
 	local b = SH.AddButton("mm", cont, h, -8, "Afficher / cacher le bouton de minimap", function() SH.MinimapToggle() end, 280)
 	cont.last = b
 end
@@ -916,6 +928,7 @@ function SH.HudUpdate()
 end
 
 function SH.HudRefreshConfig()
+	if SH.ButtonsRefreshConfig then SH.ButtonsRefreshConfig() end
 	local f = SH.hud
 	if not f then return end
 	f:SetScale(SH.CFG.hudScale or 1)
@@ -923,6 +936,198 @@ function SH.HudRefreshConfig()
 	f:EnableMouse(not SH.CFG.hudLocked)
 end
 
+-- ===================================================================
+-- Boutons a l'ecran (comme sur le paladin / le guerrier) : un clic active ou coupe, couleur = etat
+-- ===================================================================
+SH.btns = {}
+function SH.BuildButtons()
+	if SH.btnFrame then return end
+	local f = CreateFrame("Frame", "ShamanRotationButtons", UIParent)
+	SH.btnFrame = f
+	f:SetWidth(4 * 44)
+	f:SetHeight(48)
+	f:SetFrameStrata("MEDIUM")
+	f:SetMovable(true)
+	f:SetPoint("CENTER", UIParent, "CENTER", 0, -230)
+	local defs = {
+		{ key = "cl", tex = "Interface\\Icons\\Spell_Nature_ChainLightning", cfg = "btnCl" },
+		{ key = "aoe", tex = "Interface\\Icons\\Spell_Nature_EarthQuake", cfg = "btnAoe" },
+		{ key = "burst", tex = "Interface\\Icons\\Spell_Nature_WispHeal", cfg = "btnBurst" },
+		{ key = "totems", tex = "Interface\\Icons\\Spell_Fire_SearingTotem", cfg = "btnTotems" },
+	}
+	local i
+	for i = 1, table.getn(defs) do
+		local d = defs[i]
+		local b = CreateFrame("Button", "ShamanRotationBtn_" .. d.key, f)
+		b:SetWidth(40)
+		b:SetHeight(40)
+		b.key = d.key
+		b.cfg = d.cfg
+		b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		b:RegisterForDrag("LeftButton")
+		b.border = b:CreateTexture(nil, "BACKGROUND")
+		b.border:SetTexture("Interface\\Buttons\\WHITE8x8")
+		b.border:SetPoint("TOPLEFT", b, "TOPLEFT", -2, 2)
+		b.border:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 2, -2)
+		b.border:SetVertexColor(0.3, 0.3, 0.3, 1)
+		b.icon = b:CreateTexture(nil, "ARTWORK")
+		b.icon:SetTexture(d.tex)
+		b.icon:SetAllPoints(b)
+		b.txt = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		b.txt:SetPoint("BOTTOM", b, "BOTTOM", 0, 2)
+		b.big = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+		b.big:SetPoint("CENTER", b, "CENTER", 0, 4)
+		local hl = b:CreateTexture(nil, "HIGHLIGHT")
+		hl:SetTexture("Interface\\Buttons\\WHITE8x8")
+		hl:SetBlendMode("ADD")
+		hl:SetAllPoints(b)
+		hl:SetVertexColor(1, 1, 1, 0.15)
+		b:SetScript("OnClick", function() SH.ButtonClick(this.key, arg1) end)
+		b:SetScript("OnDragStart", function()
+			if not SH.CFG.btnLocked then this:GetParent():StartMoving() end
+		end)
+		b:SetScript("OnDragStop", function()
+			local p = this:GetParent()
+			p:StopMovingOrSizing()
+			local db = ShamanRotationDB
+			if type(db) == "table" then
+				local x, y = p:GetCenter()
+				db.pos = db.pos or {}
+				db.pos.btn = { x = x, y = y }
+			end
+		end)
+		b:SetScript("OnEnter", function() SH.ButtonTip(this) end)
+		b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+		SH.btns[d.key] = b
+	end
+	f.order = defs
+	local pos = ShamanRotationDB and ShamanRotationDB.pos and ShamanRotationDB.pos.btn
+	if pos and pos.x and pos.y then
+		f:ClearAllPoints()
+		f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", pos.x, pos.y)
+	end
+	f:SetScript("OnUpdate", function()
+		SH.btnAcc = (SH.btnAcc or 0) + (arg1 or 0)
+		if SH.btnAcc < 0.2 then return end
+		SH.btnAcc = 0
+		SH.ButtonsUpdate()
+	end)
+	SH.ButtonsRefreshConfig()
+end
+
+-- place les boutons visibles les uns apres les autres
+function SH.ButtonsRefreshConfig()
+	local f = SH.btnFrame
+	if not f then return end
+	f:SetScale(SH.CFG.btnScale or 1)
+	local x, i = 0, 0
+	for i = 1, table.getn(f.order) do
+		local d = f.order[i]
+		local b = SH.btns[d.key]
+		if SH.CFG[d.cfg] and SH.CFG.buttons then
+			b:ClearAllPoints()
+			b:SetPoint("LEFT", f, "LEFT", x + 2, 0)
+			b:Show()
+			x = x + 44
+		else
+			b:Hide()
+		end
+	end
+	f:SetWidth(math.max(44, x))
+	if SH.CFG.buttons then f:Show() else f:Hide() end
+	SH.ButtonsUpdate()
+end
+
+function SH.ButtonClick(key, mouse)
+	if key == "cl" then
+		if mouse == "RightButton" then SH.ClCycleMode() else ShamanRotation_ClSwitch() end
+	elseif key == "aoe" then
+		ShamanRotation_AoeToggle()
+	elseif key == "burst" then
+		ShamanRotation_Burst()
+	elseif key == "totems" then
+		ShamanRotation_TotemsAll()
+	end
+	SH.ButtonsUpdate()
+	if SH.RefreshOptions and SH.optionsFrame and SH.optionsFrame:IsShown() then SH.RefreshOptions() end
+end
+
+function SH.ButtonTip(b)
+	if not GameTooltip then return end
+	GameTooltip:SetOwner(b, "ANCHOR_TOP")
+	if b.key == "cl" then
+		GameTooltip:SetText("Chain Lightning : " .. (SH.CFG.useCl and "ACTIVE" or "COUPE"), 1, 0.82, 0)
+		GameTooltip:AddLine("Clic gauche : activer / couper", 1, 1, 1)
+		GameTooltip:AddLine("Clic droit : mode (multi-cibles / auto / toujours)", 1, 1, 1)
+		GameTooltip:AddLine("Mode actuel : " .. SH.CFG.clMode, 0.6, 0.9, 0.6)
+	elseif b.key == "aoe" then
+		GameTooltip:SetText("Mono / AoE : " .. (SH.AoeOn() and "AOE" or "MONO"), 1, 0.82, 0)
+		GameTooltip:AddLine("Clic : auto / toujours AoE / jamais", 1, 1, 1)
+		GameTooltip:AddLine("Reglage : " .. SH.CFG.aoeMode, 0.6, 0.9, 0.6)
+	elseif b.key == "burst" then
+		GameTooltip:SetText("Burst", 1, 0.82, 0)
+		GameTooltip:AddLine("Clic : lancer Elemental Mastery + Blood Fury (arme s'ils sont en recharge)", 1, 1, 1)
+	else
+		GameTooltip:SetText("Totems", 1, 0.82, 0)
+		GameTooltip:AddLine("Clic : poser tous les totems du combo " .. SH.CFG.totemPreset, 1, 1, 1)
+	end
+	GameTooltip:Show()
+end
+
+local function paint(b, r, g, bl, txt, big)
+	b.border:SetVertexColor(r, g, bl, 1)
+	b.txt:SetText(txt or "")
+	b.big:SetText(big or "")
+end
+
+-- couleurs : vert = actif, rouge = coupe / manquant, jaune = arme / en attente
+function SH.ButtonsUpdate()
+	local f = SH.btnFrame
+	if not f or not f:IsShown() then return end
+	local S = SH.SPELLS
+	local b = SH.btns.cl
+	if b then
+		local lbl = { aoe = "multi", auto = "auto", on = "toujours" }
+		if SH.CFG.useCl then
+			b.icon:SetVertexColor(1, 1, 1)
+			paint(b, 0.1, 0.85, 0.2, lbl[SH.CFG.clMode] or SH.CFG.clMode, "")
+		else
+			b.icon:SetVertexColor(0.4, 0.4, 0.4)
+			paint(b, 0.9, 0.15, 0.15, "", "OFF")
+		end
+	end
+	b = SH.btns.aoe
+	if b then
+		if SH.AoeOn() then paint(b, 1, 0.55, 0.1, SH.CFG.aoeMode, "AOE") else paint(b, 0.35, 0.6, 1, SH.CFG.aoeMode, "MONO") end
+	end
+	b = SH.btns.burst
+	if b then
+		local _, rem = SH.CdInfo(S.em)
+		if SH.burst.armed then paint(b, 1, 0.85, 0.1, "arme", "")
+		elseif rem and rem > 0.05 then
+			b.icon:SetVertexColor(0.5, 0.5, 0.5)
+			paint(b, 0.6, 0.2, 0.2, "", string.format("%.0f", rem))
+			return SH.ButtonsUpdateTotems()
+		else paint(b, 0.1, 0.85, 0.2, "pret", "") end
+		b.icon:SetVertexColor(1, 1, 1)
+	end
+	SH.ButtonsUpdateTotems()
+end
+
+function SH.ButtonsUpdateTotems()
+	local b = SH.btns.totems
+	if not b then return end
+	local now = GetTime()
+	local missing, i, el, want = 0, 0, nil, nil
+	for i = 1, table.getn(SH.TOTEM_ORDER) do
+		el = SH.TOTEM_ORDER[i]
+		want = SH.PresetTotem(el, SH.AoeOn())
+		if want and not SH.TotemActive(want, now) then missing = missing + 1 end
+	end
+	if SH.CFG.totemPreset == "off" then paint(b, 0.35, 0.35, 0.35, "", "")
+	elseif missing > 0 then paint(b, 0.9, 0.15, 0.15, SH.CFG.totemPreset, tostring(missing))
+	else paint(b, 0.1, 0.85, 0.2, SH.CFG.totemPreset, "") end
+end
 -- ===================================================================
 -- Bouton de minimap : clic = menu, clic droit = bascule AoE, glisser = deplacer
 -- ===================================================================
@@ -996,5 +1201,6 @@ SH.uiFrame = CreateFrame("Frame")
 SH.uiFrame:RegisterEvent("PLAYER_LOGIN")
 SH.uiFrame:SetScript("OnEvent", function()
 	SH.BuildHud()
+	SH.BuildButtons()
 	SH.BuildMinimap()
 end)

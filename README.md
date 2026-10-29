@@ -20,6 +20,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 | **Shield** | Water Shield (default) or Earth Shield re-applied automatically when it is gone (out of combat, and in combat for one GCD), not while you drink or ride. |
 | **Relics** | `main` (one relic, equipped out of combat) or `spell` (one relic per spell). **Wait mode only**: equipping in combat costs a 1.5 s GCD (proven in the server source), so the swap takes one press and the spell leaves on the next. |
 | **Totem range** | A buff totem (30 m aura radius) that is too far from you, or destroyed, is re-dropped automatically (out of combat, optionally in combat). Needs UnitXP + friendly nameplates to find your totem; otherwise only the timer decides. |
+| **Buttons** | Clickable on-screen buttons like the paladin / warrior addons: **Chain Lightning ON/OFF** (green / red, right-click = mode), Mono/AoE, Burst, Totems. Movable, lockable, scalable, each can be hidden. |
 | **HUD** | GCD bar, Flame Shock timer, shock / Chain Lightning / Earthquake / Elemental Mastery / Blood Fury cooldowns, the four totem slots. |
 | **Menu** | Fixed-size window with scrolling tabs, tooltips with the default value on every option, minimap button. |
 

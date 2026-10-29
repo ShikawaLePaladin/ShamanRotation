@@ -4,6 +4,7 @@
 	<Binding name="SHAMANROT_TOTEMS" runOnUp="false">ShamanRotation_Totems()</Binding>
 	<Binding name="SHAMANROT_TOTEMS4" runOnUp="false">ShamanRotation_TotemsAll()</Binding>
 	<Binding name="SHAMANROT_CL" runOnUp="false">ShamanRotation_ClToggle()</Binding>
+	<Binding name="SHAMANROT_CLSWITCH" runOnUp="false">ShamanRotation_ClSwitch()</Binding>
 	<Binding name="SHAMANROT_AOE" runOnUp="false">ShamanRotation_AoeToggle()</Binding>
 	<Binding name="SHAMANROT_MENU" runOnUp="false">ShamanRotation_OpenMenu()</Binding>
 </Bindings>

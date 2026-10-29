@@ -212,3 +212,20 @@ function ShamanRotation_ClToggle()
 	SH.Print("Chain Lightning : " .. txt[nxt])
 	if SH.RefreshOptions then SH.RefreshOptions() end
 end
+
+-- interrupteur : Chain Lightning active / coupe (case maitre useCl) ; le MODE (multi-cibles / auto / toujours) reste celui choisi
+function ShamanRotation_ClSwitch()
+	SH.SetSetting("useCl", not SH.CFG.useCl)
+	SH.Print("Chain Lightning : " .. (SH.CFG.useCl and "ACTIVE" or "COUPE") .. (SH.CFG.useCl and (" (mode " .. SH.CFG.clMode .. ")") or ""))
+	if SH.RefreshOptions then SH.RefreshOptions() end
+end
+
+-- clic droit sur le bouton : change le MODE parmi multi-cibles -> auto -> toujours (jamais = l'interrupteur)
+function SH.ClCycleMode()
+	local m = SH.CFG.clMode
+	local nxt = (m == "aoe") and "auto" or ((m == "auto") and "on" or "aoe")
+	SH.SetSetting("clMode", nxt)
+	local lbl = { aoe = "MULTI-CIBLES SEULEMENT", auto = "AUTO (economise la mana)", on = "TOUJOURS" }
+	SH.Print("Chain Lightning, mode : " .. lbl[nxt])
+	if SH.RefreshOptions then SH.RefreshOptions() end
+end
