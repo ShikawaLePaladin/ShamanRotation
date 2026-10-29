@@ -6,7 +6,7 @@
 ---------------------------------------------------------------
 ShamanRotation = {}
 local SH = ShamanRotation
-SH.VERSION = "0.3.0"
+SH.VERSION = "0.3.1"
 SH.DB_VERSION = 1
 
 BINDING_HEADER_SHAMANROT = "Shaman Rotation"

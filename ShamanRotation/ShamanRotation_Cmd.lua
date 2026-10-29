@@ -6,7 +6,7 @@ local SH = ShamanRotation
 
 local function help()
 	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [all|caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
-	SH.Print("   cl [aoe|auto|on|off] | menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
+	SH.Print("   diag (verifie l'installation) | cl [aoe|auto|on|off] | menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
 end
 
 local function status()
@@ -57,7 +57,23 @@ function SH.Slash(msg)
 		else
 			SH.Print(rest .. " : ABSENT de ton livre de sorts (ni appris ni sous ce nom exact)")
 		end
-	elseif cmd == "menu" or cmd == "config" then
+	elseif cmd == "diag" then
+		-- diagnostic d'installation : version, modules charges (un module absent = son fichier n'a pas ete lu), extensions, interface creee
+		local mods = { { "noyau", SH.Cast }, { "rotation", SH.Rotation }, { "totems", SH.TotemWatch }, { "bouclier", SH.ShieldStep }, { "reliques", SH.RelicGate },
+			{ "menu", SH.OpenMenu }, { "boutons", SH.BuildButtons }, { "commandes", SH.Slash } }
+		local ok, miss, i = "", "", 0
+		for i = 1, table.getn(mods) do
+			if mods[i][2] then ok = ok .. mods[i][1] .. " " else miss = miss .. mods[i][1] .. " " end
+		end
+		local build = GetBuildInfo and GetBuildInfo() or "?"
+		SH.Print("diag : version " .. SH.VERSION .. ", client " .. tostring(build) .. ", classe " .. tostring((UnitClass("player"))))
+		SH.Print("   modules charges : " .. ok)
+		SH.Print("   modules ABSENTS : " .. (miss == "" and "aucun" or (miss .. " -> le fichier correspondant n'a pas ete lu : verifie le dossier Interface/AddOns/ShamanRotation (noms exacts, pas de \\ dans les noms)")))
+		SH.Print("   interface : indicateur " .. (SH.hud and "ok" or "ABSENT") .. ", boutons " .. (SH.btnFrame and "ok" or "ABSENT") .. ", minimap " .. (SH.mmButton and "ok" or "ABSENT")
+			.. ", sauvegarde " .. (type(ShamanRotationDB) == "table" and "ok" or "ABSENTE"))
+		SH.Print("   extensions : Nampower " .. (type(IsSpellInRange) == "function" and "oui" or "non") .. ", UnitXP " .. (type(UnitXP) == "function" and "oui" or "non")
+			.. ", SuperWoW " .. (type(SUPERWOW_VERSION) ~= "nil" and "oui" or "non") .. "  (toutes optionnelles)")
+		SH.Print("   sorts connus : Lightning Bolt " .. tostring(SH.Known("Lightning Bolt")) .. ", Chain Lightning " .. tostring(SH.Known("Chain Lightning")) .. ", Flame Shock " .. tostring(SH.Known("Flame Shock")))	elseif cmd == "menu" or cmd == "config" then
 		SH.OpenMenu()
 	elseif cmd == "hud" then
 		ShamanRotation_HudToggle()

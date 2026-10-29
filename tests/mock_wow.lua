@@ -379,3 +379,5 @@ do
   UnitName = function(u) local p = plateOf(u); if p and p.name then return p.name end return origName(u) end
   UnitExists = function(u) local p = plateOf(u); if p then if p.gone then return nil end return 1, u end return origExists(u) end
 end
+
+GetBuildInfo = function() return "1.12.1", "5875", "Sep 19 2006", 11200 end

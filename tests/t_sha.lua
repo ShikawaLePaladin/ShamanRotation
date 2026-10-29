@@ -433,4 +433,16 @@ SIM.run(12, 0.1); ok(SIM.count("Chain Lightning") >= 1, "mode multi-cibles + AoE
 fresh(); CFG.clMode = "aoe"; W.manaMax = 90000; W.mana = 90000; SIM.addBuff("Interface\\Icons\\Spell_Nature_Lightning", 45542, 1, 30)
 SIM.run(8, 0.1); eq(SIM.count("Chain Lightning"), 0, "mode multi-cibles : meme sous Clearcasting, pas de Chain Lightning en mono")
 
+-- ===== /shamrot diag : verification d'installation (utile quand un fichier n'a pas ete charge, par ex. archive mal extraite)
+fresh(); CHAT = {}
+SH.Slash("diag")
+local all = table.concat(CHAT, "|")
+ok(string.find(all, "modules charges", 1, true) ~= nil, "diag : liste les modules charges")
+ok(string.find(all, "modules ABSENTS : aucun", 1, true) ~= nil, "diag : aucun module absent quand tout est charge")
+ok(string.find(all, "extensions", 1, true) ~= nil and string.find(all, "sorts connus", 1, true) ~= nil, "diag : extensions et sorts connus")
+-- un module manquant est signale (simule un fichier non lu)
+local saveRel = SH.RelicGate; SH.RelicGate = nil; CHAT = {}
+SH.Slash("diag"); SH.RelicGate = saveRel
+ok(string.find(table.concat(CHAT, "|"), "ABSENTS : ", 1, true) ~= nil and string.find(table.concat(CHAT, "|"), "reliques", 1, true) ~= nil, "diag : un module absent est nomme")
+
 DONE()

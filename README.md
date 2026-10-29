@@ -24,8 +24,18 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 | **HUD** | GCD bar, Flame Shock timer, shock / Chain Lightning / Earthquake / Elemental Mastery / Blood Fury cooldowns, the four totem slots. |
 | **Menu** | Fixed-size window with scrolling tabs, tooltips with the default value on every option, minimap button. |
 
+## Linux (Wine / Lutris / native)
+1. Download the **zip or tar.gz from the Releases page** (not "Download ZIP" of the repository, which nests the addon one level deeper).
+2. The folder must end up as `.../Interface/AddOns/ShamanRotation/ShamanRotation.toc` (exact capitalisation, the `.toc` directly inside the folder).
+   ```sh
+   unzip ShamanRotation-0.3.1.zip -d "/path/to/WoW/Interface/AddOns"      # or: tar xzf ShamanRotation-0.3.1.tar.gz -C "/path/to/WoW/Interface/AddOns"
+   ls "/path/to/WoW/Interface/AddOns/ShamanRotation"                      # must list ShamanRotation.toc, ShamanRotation.lua, ...
+   ```
+   Or let the script do it: `./install-linux.sh "/path/to/WoW/Interface/AddOns"` (it also repairs an archive extracted with `\` in the file names, which older zips made).
+3. Restart the game completely, then type `/shamrot diag`: it lists the modules that loaded, the extensions found (Nampower / UnitXP / SuperWoW, all optional) and what is missing.
+Typical Lutris/Wine locations: `~/Games/<game>/drive_c/.../Interface/AddOns` or inside your Wine prefix.
 ## Commands
-`/shamrot` (or `/shaman`): `menu`, `hud`, `status`, `aoe [auto|on|off]`, `burst`, `totems [preset]`, `relic [mode off|main|spell]`, `immune fire|nature|frost [clear]`, `set <key> <value>`, `debug`, `trace`, `reset`.
+`/shamrot` (or `/shaman`): `menu`, `hud`, `status`, `aoe [auto|on|off]`, `burst`, `totems [preset]`, `relic [mode off|main|spell]`, `immune fire|nature|frost [clear]`, `set <key> <value>`, `diag`, `debug`, `trace`, `reset`.
 
 ## Things worth knowing (verified on the server data)
 * Flame Shock, Earth Shock and Frost Shock **share one 6 s cooldown and each has a 1.5 s GCD**: an Earth Shock cannot be slipped between GCDs.
