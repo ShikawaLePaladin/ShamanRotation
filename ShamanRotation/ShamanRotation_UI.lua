@@ -225,6 +225,7 @@ SH.KEYROWS = {
 	{ "SHAMANROT_CLSWITCH", "Chain Lightning ON / OFF" },
 	{ "SHAMANROT_CL", "Chain Lightning : mode" },
 	{ "SHAMANROT_AOE", "Mode AoE (bascule)" },
+	{ "SHAMANROT_HUD", "Indicateur (afficher / cacher)" },
 	{ "SHAMANROT_MENU", "Ouvrir ce menu" },
 }
 SH.keyBtns = {}
@@ -925,6 +926,14 @@ function SH.HudUpdate()
 			f.tot[el]:SetText("")
 		end
 	end
+end
+
+-- touche / bouton : affiche ou cache l'indicateur (GCD, recharges, totems)
+function ShamanRotation_HudToggle()
+	SH.SetSetting("hud", not SH.CFG.hud)
+	SH.HudRefreshConfig()
+	if SH.RefreshOptions then SH.RefreshOptions() end
+	SH.Print("Indicateur : " .. (SH.CFG.hud and "affiche" or "cache") .. "  (/shamrot hud, ou onglet Affichage)")
 end
 
 function SH.HudRefreshConfig()

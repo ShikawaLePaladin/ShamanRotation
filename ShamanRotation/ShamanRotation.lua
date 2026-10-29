@@ -16,6 +16,7 @@ BINDING_NAME_SHAMANROT_TOTEMS = "Totems (combo)"
 BINDING_NAME_SHAMANROT_TOTEMS4 = "Poser tous les totems (combo)"
 BINDING_NAME_SHAMANROT_CL = "Chain Lightning : mode (multi-cibles / auto / toujours / jamais)"
 BINDING_NAME_SHAMANROT_CLSWITCH = "Chain Lightning : ACTIVER / COUPER"
+BINDING_NAME_SHAMANROT_HUD = "Afficher / cacher l'indicateur"
 BINDING_NAME_SHAMANROT_AOE = "Mode AoE (bascule)"
 BINDING_NAME_SHAMANROT_MENU = "Ouvrir le menu"
 

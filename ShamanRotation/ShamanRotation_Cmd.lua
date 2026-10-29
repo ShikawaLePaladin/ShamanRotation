@@ -60,9 +60,7 @@ function SH.Slash(msg)
 	elseif cmd == "menu" or cmd == "config" then
 		SH.OpenMenu()
 	elseif cmd == "hud" then
-		SH.SetSetting("hud", not SH.CFG.hud)
-		SH.HudRefreshConfig()
-		SH.Print("indicateur : " .. (SH.CFG.hud and "affiche" or "cache"))
+		ShamanRotation_HudToggle()
 	elseif cmd == "status" then
 		status()
 	elseif cmd == "aoe" then

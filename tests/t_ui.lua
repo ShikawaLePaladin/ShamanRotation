@@ -122,7 +122,7 @@ ok(SH.keyCap:IsShown(), "clic sur le bouton : capture ouverte")
 press("ESCAPE")
 -- menu : liaison
 ok(type(ShamanRotation_OpenMenu) == "function", "fonction ShamanRotation_OpenMenu (liaison Ouvrir le menu)")
-eq(table.getn(SH.KEYROWS), 8, "8 actions liables (dont Chain Lightning ON/OFF et mode)")
+eq(table.getn(SH.KEYROWS), 9, "9 actions liables (dont l'indicateur)")
 
 -- ===== boutons a l'ecran (comme le paladin / le guerrier)
 SIM.setup(); SIM.load(nil)
@@ -184,5 +184,24 @@ SH.OpenMenu(true); SH.ShowTab("affichage")
 ok(ShamanRotOpt_BtnCl ~= nil and ShamanRotOpt_Btns ~= nil and ShamanRotOpt_BtnLock ~= nil, "cases des boutons dans l'onglet Affichage")
 ShamanRotOpt_BtnCl:SetChecked(false); this = ShamanRotOpt_BtnCl; ShamanRotOpt_BtnCl.scripts.OnClick()
 ok(not cl:IsShown(), "case Bouton Chain Lightning decochee : bouton masque")
+
+-- ===== indicateur : on peut le couper (case, touche, commande)
+SIM.setup(); SIM.load(nil); Fire("PLAYER_LOGIN")
+ok(ShamanRotationHud:IsShown(), "indicateur affiche par defaut")
+ShamanRotation_HudToggle(); eq(CFG.hud, false, "touche : indicateur coupe")
+ok(not ShamanRotationHud:IsShown(), "... et cache a l'ecran")
+eq(ShamanRotationDB.settings.hud, false, "... enregistre")
+ShamanRotation_HudToggle(); ok(ShamanRotationHud:IsShown(), "touche : indicateur reaffiche")
+SH.Slash("hud"); ok(not ShamanRotationHud:IsShown(), "/shamrot hud : coupe")
+SH.Slash("hud"); ok(ShamanRotationHud:IsShown(), "/shamrot hud : reaffiche")
+SH.OpenMenu(true); SH.ShowTab("affichage")
+ShamanRotOpt_Hud:SetChecked(false); this = ShamanRotOpt_Hud; ShamanRotOpt_Hud.scripts.OnClick()
+ok(not ShamanRotationHud:IsShown(), "case 'Afficher l'indicateur' decochee : indicateur cache")
+-- il reste cache apres un rechargement
+local saved = ShamanRotationDB
+for k, v in pairs(SH.DEFAULTS) do CFG[k] = v end
+SIM.load(saved); SH.HudRefreshConfig()
+eq(CFG.hud, false, "rechargement : indicateur toujours coupe")
+ok(not ShamanRotationHud:IsShown(), "... et toujours cache")
 
 DONE()
