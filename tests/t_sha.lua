@@ -211,5 +211,11 @@ fresh(); CFG.totemPreset = "melee"; ShamanRotation_TotemsAll(); W.dead = true; P
 ok(SH.totemSeq == nil, "mort : sequence annulee")
 SH.Slash("totems all")
 W.dead = false
+CHAT = {}
+SH.Slash("known Lightning Bolt"); SH.Slash("known Call of the Elements"); SH.Slash("known")
+local seen = {}
+for i = 1, table.getn(CHAT) do seen[i] = CHAT[i] end
+ok(string.find(table.concat(seen, "|"), "Lightning Bolt : dans ton livre", 1, true) ~= nil, "/shamrot known : sort connu")
+ok(string.find(table.concat(seen, "|"), "Call of the Elements : ABSENT", 1, true) ~= nil, "/shamrot known : sort absent")
 
 DONE()

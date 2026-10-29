@@ -6,7 +6,7 @@ local SH = ShamanRotation
 
 local function help()
 	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [all|caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
-	SH.Print("   menu | hud | relic | status | set <cle> <valeur> | debug | trace | reset")
+	SH.Print("   menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
 end
 
 local function status()
@@ -42,6 +42,16 @@ function SH.Slash(msg)
 				SH.Print("   " .. SH.RELIC_SPELLS[i] .. " : " .. (SH.RelicRule(SH.RELIC_SPELLS[i]) or "aucune"))
 			end
 			SH.Print("   /shamrot relic mode off|main|spell ; les reliques par sort se reglent dans le menu (onglet Reliques)")
+		end
+	elseif cmd == "known" or cmd == "sort" then
+		-- verifie si un sort est dans le livre de sorts de CE personnage (rang le plus haut, recharge)
+		if rest == "" then
+			SH.Print("/shamrot known <nom exact du sort>   ex. /shamrot known Call of the Elements")
+		elseif SH.Known(rest) then
+			local rem = SH.CdInfo(rest)
+			SH.Print(rest .. " : dans ton livre de sorts" .. (rem > 0 and (" (recharge " .. string.format("%.1f", rem) .. " s)") or " (pret)"))
+		else
+			SH.Print(rest .. " : ABSENT de ton livre de sorts (ni appris ni sous ce nom exact)")
 		end
 	elseif cmd == "menu" or cmd == "config" then
 		SH.OpenMenu()
