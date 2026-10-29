@@ -49,55 +49,69 @@ function SH.PresetTotem(el, aoe)
 	return p[el]
 end
 
--- pose le totem : 1 GCD ; vrai si l'appui est consomme
-function SH.PlaceTotem(name, now)
+-- pose le totem ; vrai si l'appui est consomme. multi = on lance plusieurs totems dans le MEME appui (pas de garde de 0,5 s).
+-- Serveur (spell_template.StartRecoveryCategory) : chaque element a SA categorie de GCD (feu 105, terre 106, eau 107, air 108) ; les sorts normaux
+-- sont en 133. Un totem n'est donc pas retarde par les trois autres (ni par un sort a incantation) : les 4 totems partent dans la meme image.
+-- Exceptions relevees : Windfury Totem rang 3 et Fire Nova Totem sont en 133 (GCD normal).
+SH.totemPend = {}       -- [element] = { name, at, prev } : poses supposees, a confirmer
+function SH.PlaceTotem(name, now, multi)
 	if not SH.Known(name) then return false end
-	if now - SH.totemTry < 0.5 then return true end -- laisse le jeu repondre
+	if (not multi) and now - SH.totemTry < 0.5 then return true end -- laisse le jeu repondre
 	if SH.CdInfo(name) > 0 or SH.Blocked(name) then return false end
 	SH.totemTry = now
 	SH.Dbg("TOTEM -> " .. name)
 	SH.Cast(name)
 	local info = SH.TOTEM[name]
 	if info then
-		-- pose supposee ; confirmee au prochain appui si le GCD a demarre (sinon le lancer a ete refuse : la marque est retiree)
-		SH.totemPending = { el = info[1], name = name, at = now, prev = SH.totems[info[1]] }
+		-- pose supposee ; confirmee ensuite si le GCD DU TOTEM a demarre (sinon le lancer a ete refuse : la marque est retiree)
+		SH.totemPend[info[1]] = { name = name, at = now, prev = SH.totems[info[1]] }
 		SH.totems[info[1]] = { name = name, at = now }
 	end
 	return true
 end
 
+-- confirme / annule les poses supposees (au moins 0,15 s apres l'appui)
 function SH.TotemConfirm(now)
-	local p = SH.totemPending
-	if not p then return end
-	if now - p.at < 0.15 then return end
-	SH.totemPending = nil
-	if now - p.at > 0.6 then return end -- trop tard pour juger (le GCD est peut-etre deja fini) : on garde la pose supposee
-	-- le GCD du totem a-t-il demarre APRES notre appui ? (un GCD plus ancien, d'un autre sort, ne prouve rien)
-	local idx = SH.GetSpellIdx(p.name)
-	local start = 0
-	if idx then
-		local s = GetSpellCooldown(idx, "spell")
-		start = s or 0
-	end
-	if start < p.at - 0.1 then
-		SH.totems[p.el] = p.prev -- aucun GCD demarre : lancer refuse
-		SH.totemTry = -10
+	local el, p
+	for el, p in pairs(SH.totemPend) do
+		if now - p.at >= 0.15 then
+			SH.totemPend[el] = nil
+			if now - p.at <= 0.6 then -- plus tard : le GCD est peut-etre deja fini, on garde la pose supposee
+				local idx = SH.GetSpellIdx(p.name)
+				local start = 0
+				if idx then
+					local s = GetSpellCooldown(idx, "spell")
+					start = s or 0
+				end
+				if start < p.at - 0.1 then
+					SH.totems[el] = p.prev -- aucun GCD demarre apres notre appui : lancer refuse
+					SH.totemTry = -10
+				end
+			end
+		end
 	end
 end
 
--- rotation : seul le totem de feu (Searing / Magma), pendant le combat
-function SH.TotemFireStep(now, aoe)
-	-- une pose vient d'etre tentee : on attend sa confirmation (~0,2 s) au lieu de lancer un autre sort dont le GCD la ferait croire reussie
-	if SH.totemPending and now - SH.totemPending.at < 0.45 then return true end
-	local want = SH.PresetTotem("fire", aoe)
-	if not want or SH.TotemActive(want, now) then return false end
-	if SH.PlaceTotem(want, now) then
-		SH.Decide(now, "Totem : " .. want)
-		return true
+-- une pose vient d'etre tentee (moins de 0,45 s) : en attente de confirmation
+function SH.TotemPendingAny(now)
+	local el, p
+	for el, p in pairs(SH.totemPend) do
+		if now - p.at < 0.45 then return true end
 	end
 	return false
 end
 
+-- rotation : seul le totem de feu (Searing / Magma), pendant le combat. Sa categorie de GCD (105) n'est pas celle des sorts (133) : le totem part
+-- SANS prendre l'appui, la rotation lance son sort normalement dans la meme image. Retourne toujours faux (l'appui n'est pas consomme).
+function SH.TotemFireStep(now, aoe)
+	if now < SH.castUntil then return false end -- un sort a incantation est en cours : un instantane ne peut pas partir (il attend la fin)
+	local want = SH.PresetTotem("fire", aoe)
+	if not want or SH.TotemActive(want, now) or SH.totemPend.fire then return false end
+	if SH.PlaceTotem(want, now, true) then
+		SH.Decide(now, "Totem : " .. want .. " (GCD de son element : la rotation continue)")
+	end
+	return false
+end
 -- bouton Totems : pose le premier totem MANQUANT du preset (feu, air, terre, eau), un par appui (1 GCD chacun)
 function ShamanRotation_Totems()
 	local now = GetTime()
@@ -132,7 +146,8 @@ function SH.TotemStatus()
 end
 
 -- ===================================================================
--- Tous les totems du combo d'un seul appui : sequence automatique (un GCD de 1,5 s chacun, ~6 s pour 4 totems)
+-- Tous les totems du combo d'UN SEUL appui : les 4 partent dans la meme image (une categorie de GCD par element).
+-- Ceux qui seraient refuses (meme categorie, mana, GCD) sont retentes automatiquement, un par un, jusqu'a 15 s.
 -- ===================================================================
 SH.totemSeq = nil
 
@@ -142,10 +157,11 @@ function ShamanRotation_TotemsAll()
 		return
 	end
 	SH.totemSeq = { at = GetTime(), skipped = {} }
-	SH.Print("Pose des totems du combo " .. SH.CFG.totemPreset .. " (un GCD chacun, automatique)...")
+	SH.Print("Pose des totems du combo " .. SH.CFG.totemPreset .. "...")
+	SH.TotemSeqStep(GetTime()) -- tout de suite : les totems prets partent dans cette image
 end
 
--- une etape : pose le premier totem manquant des que le GCD est libre ; vrai tant que la sequence continue
+-- une etape : lance tous les totems manquants qui sont prets ; vrai tant que la sequence continue
 function SH.TotemSeqStep(now)
 	local q = SH.totemSeq
 	if not q then return false end
@@ -154,9 +170,9 @@ function SH.TotemSeqStep(now)
 		return false
 	end
 	SH.TotemConfirm(now)
-	if SH.totemPending then return true end            -- on attend de savoir si la pose precedente a pris
 	if now < SH.castUntil then return true end         -- incantation en cours
 	local i, el, want
+	local waiting = false
 	for i = 1, table.getn(SH.TOTEM_ORDER) do
 		el = SH.TOTEM_ORDER[i]
 		want = SH.PresetTotem(el, SH.AoeOn())
@@ -169,13 +185,13 @@ function SH.TotemSeqStep(now)
 				SH.totemSeq = nil
 				return false
 			elseif SH.CdInfo(want) > 0 then
-				return true                             -- GCD en cours : on attend
+				waiting = true                          -- sa categorie de GCD est occupee : on retente
 			else
-				SH.PlaceTotem(want, now)
-				return true
+				SH.PlaceTotem(want, now, true)          -- multi : pas de garde, les autres partent dans la meme image
 			end
 		end
 	end
+	if waiting or next(SH.totemPend) ~= nil then return true end
 	SH.totemSeq = nil
 	SH.Print("Totems en place (combo " .. SH.CFG.totemPreset .. ").")
 	return false

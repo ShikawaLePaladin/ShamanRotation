@@ -169,29 +169,41 @@ fresh()
 SH.Slash("reset")
 eq(CFG.fsRefresh, 4.0, "/shamrot reset")
 
--- ===== tous les totems d'un seul appui : sequence automatique (un GCD de 1,5 s chacun)
+-- ===== tous les totems d'un seul appui : un GCD PAR ELEMENT (serveur), donc les 4 partent dans la meme image
 fresh(); CFG.totemPreset = "melee"
-ShamanRotation_TotemsAll()
-Pump(0.05); Pump(0.05)
 local t0 = NOW
-local n = 0
-while NOW - t0 < 8 and SH.totemSeq do Pump(0.05); n = n + 1 end
-eq(SIM.count("Flametongue Totem") + SIM.count("Windfury Totem") + SIM.count("Strength of Earth Totem") + SIM.count("Mana Spring Totem"), 4, "sequence : les 4 totems du combo cac poses en un appui")
-ok(NOW - t0 >= 4.4 and NOW - t0 <= 7.5, "... en environ 4,5 a 7 s (un GCD chacun) : " .. string.format("%.1f", NOW - t0))
-ok(SH.totemSeq == nil, "sequence terminee")
--- ordre : feu, air, terre, eau ; jamais deux totems dans le meme GCD
-local last = nil; local tooClose = 0
-for i = 1, table.getn(CASTS) do
-  if CASTS[i].ok then if last and CASTS[i].t - last < 1.45 then tooClose = tooClose + 1 end; last = CASTS[i].t end
-end
-eq(tooClose, 0, "chaque totem attend la fin du GCD (aucun lancer refuse)")
+ShamanRotation_TotemsAll()
+eq(SIM.count("Flametongue Totem") + SIM.count("Windfury Totem") + SIM.count("Strength of Earth Totem") + SIM.count("Mana Spring Totem"), 4, "les 4 totems du combo cac partent dans le meme appui")
+eq(NOW, t0, "... sans aucun delai (meme image)")
+Pump(0.5); Pump(0.5)
+ok(SH.totemSeq == nil, "sequence terminee apres confirmation")
 local refused = 0
 for i = 1, table.getn(CASTS) do if not CASTS[i].ok then refused = refused + 1 end end
-eq(refused, 0, "aucun lancer refuse pendant la sequence")
+eq(refused, 0, "aucun lancer refuse")
+fresh(); CFG.totemPreset = "fear"
+ShamanRotation_TotemsAll()
+eq(SIM.count("Searing Totem") + SIM.count("Tranquil Air Totem") + SIM.count("Mana Spring Totem") + SIM.count("Tremor Totem"), 4, "combo anti-peur : 4 totems d'un coup")
 -- deja en place : rien de plus
-local nb = table.getn(CASTS); ShamanRotation_TotemsAll(); Pump(0.2); Pump(0.2)
+local nb = table.getn(CASTS); Pump(1.0); ShamanRotation_TotemsAll(); Pump(0.2)
 eq(table.getn(CASTS), nb, "totems deja en place : aucune repose")
--- la rotation attend pendant la sequence
+-- un sort normal en cours de GCD (133) retarde seulement Windfury r3 (133), pas les autres totems
+fresh(); CFG.totemPreset = "melee"
+SIM.press()   -- Flame Shock : GCD normal
+local tt = NOW
+ShamanRotation_TotemsAll()
+eq(SIM.count("Flametongue Totem") + SIM.count("Strength of Earth Totem") + SIM.count("Mana Spring Totem"), 3, "GCD normal en cours : 3 totems (categories 105/106/107) partent quand meme")
+eq(SIM.count("Windfury Totem"), 0, "... Windfury (GCD normal) attend")
+local t1 = NOW; while NOW - t1 < 3 and SH.totemSeq do Pump(0.05) end
+eq(SIM.count("Windfury Totem"), 1, "... puis Windfury part des que le GCD normal est fini")
+-- un lancer refuse est retente (la marque est retiree)
+fresh(); CFG.totemPreset = "caster"; W.reject = { ["Tranquil Air Totem"] = true }
+ShamanRotation_TotemsAll()
+local t3 = NOW; while NOW - t3 < 2 do Pump(0.05) end
+eq(SIM.count("Searing Totem"), 1, "refus d'un totem : les autres sont poses")
+ok(SH.totems.air == nil or SH.totems.air.at ~= t3, "... et la pose refusee n'est pas comptee")
+W.reject = {}
+local t4 = NOW; while NOW - t4 < 3 and SH.totemSeq do Pump(0.05) end
+eq(SIM.count("Tranquil Air Totem"), 1, "refus leve : le totem est retente et pose")-- la rotation attend pendant la sequence
 fresh(); CFG.totemPreset = "caster"
 ShamanRotation_TotemsAll()
 SIM.press()

@@ -35,7 +35,11 @@ DEFS["Elemental Mastery"] = { gcd = false, cd = 180, mana = 0, tex = "Interface\
 DEFS["Blood Fury"] = { gcd = false, cd = 120, mana = 0, tex = "Interface\\Icons\\Racial_Orc_BerserkerStrength" }
 local TOTEMS = { "Searing Totem", "Magma Totem", "Fire Nova Totem", "Flametongue Totem", "Mana Spring Totem", "Healing Stream Totem", "Poison Cleansing Totem",
   "Disease Cleansing Totem", "Tranquil Air Totem", "Windfury Totem", "Grace of Air Totem", "Strength of Earth Totem", "Tremor Totem", "Stoneskin Totem" }
-for i = 1, table.getn(TOTEMS) do DEFS[TOTEMS[i]] = { gcd = true, mana = 150, tex = "Interface\\Icons\\Spell_Nature_Totem" } end
+-- categorie de GCD de chaque totem (spell_template.StartRecoveryCategory) : feu 105, terre 106, eau 107, air 108 ; Windfury r3 et Fire Nova : 133 (GCD normal)
+local TCAT = { ["Searing Totem"] = 105, ["Magma Totem"] = 105, ["Flametongue Totem"] = 105, ["Strength of Earth Totem"] = 106, ["Tremor Totem"] = 106, ["Stoneskin Totem"] = 106,
+  ["Mana Spring Totem"] = 107, ["Healing Stream Totem"] = 107, ["Poison Cleansing Totem"] = 107, ["Disease Cleansing Totem"] = 107, ["Tranquil Air Totem"] = 108,
+  ["Grace of Air Totem"] = 108 }
+for i = 1, table.getn(TOTEMS) do DEFS[TOTEMS[i]] = { gcd = true, mana = 150, tcat = TCAT[TOTEMS[i]], tex = "Interface\\Icons\\Spell_Nature_Totem" } end
 SIM.DEFS = DEFS
 
 function SIM.addDebuff(tex, dur)
@@ -64,14 +68,20 @@ function SIM_TRY_CAST(n)
   if W.castEnd and W.castEnd > NOW then return false, "incantation en cours" end
   local cs, cd = W.cdStart[n], W.cdDur[n]
   if cs and cd and cs + cd > NOW then return false, "recharge" end
-  if d.gcd and W.gcdEnd > NOW then return false, "gcd" end
+  if d.gcd then
+    if d.tcat then
+      if (W.tgcd[d.tcat] or 0) > NOW then return false, "gcd" end
+    elseif W.gcdEnd > NOW then return false, "gcd" end
+  end
   if W.mana < d.mana then Fire("UI_ERROR_MESSAGE", "Not enough mana"); return false, "mana" end
   if d.hostile then
     if not hostile() then return false, "cible" end
     if d.range and (W.target.dist or 0) > d.range then return false, "portee" end
   end
   W.mana = W.mana - d.mana
-  if d.gcd then W.gcdStart = NOW; W.gcdEnd = NOW + 1.5 end
+  if d.gcd then
+    if d.tcat then W.tgcd[d.tcat] = NOW + 1.5; W.tgcdStart[d.tcat] = NOW else W.gcdStart = NOW; W.gcdEnd = NOW + 1.5 end
+  end
   if d.cd then W.cdStart[n] = NOW; W.cdDur[n] = d.cd end
   if d.cast then W.castEnd = NOW + d.cast; Fire("SPELLCAST_START", n, d.cast * 1000) end
   if d.onCast then d.onCast(n) end
@@ -89,6 +99,7 @@ function SIM.setup(opts)
   Fire("SPELLS_CHANGED")
   W.cdStart, W.cdDur = {}, {}
   W.gcdStart, W.gcdEnd = 0, 0
+  W.tgcd, W.tgcdStart = {}, {}
   W.castEnd = nil
   W.mana, W.manaMax = 9000, 9000
   W.hp, W.hpMax = 5000, 5000
@@ -105,6 +116,18 @@ function SIM.setup(opts)
   SIM.newTarget(opts.target)
   NOW = NOW + 100
 end
+-- GetSpellCooldown : un totem a la categorie de GCD de son element (pas celle des sorts normaux)
+local origCd = GetSpellCooldown
+GetSpellCooldown = function(i, bt)
+  local n = W.book[i]
+  local d = n and W.defs[n]
+  if d and d.tcat then
+    if (W.tgcd[d.tcat] or 0) > NOW then return W.tgcdStart[d.tcat], 1.5, 1 end
+    return 0, 0, 1
+  end
+  return origCd(i, bt)
+end
+
 function SIM.newTarget(t)
   t = t or {}
   W.target = { name = t.name or "Defias Thug", guid = t.guid or ("0xMOB" .. tostring(math.floor(NOW))), hp = 100000, hpMax = 100000, level = 60, class = "normal",

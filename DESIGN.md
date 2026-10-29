@@ -41,3 +41,9 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
   PAS de proc mana dans item_template : "+150 mana sur 6 s" NON VERIFIE. Set "T0.5 4 pieces : proc +95 sorts 10 s" NON TROUVE : sets lus = The Five Thunders 519 (6 pieces : degats des sorts)
   et Earthfury Garb 666 (3 : Searing Totem +15 s ; 5 : Earth Shield ; 8 : Earthquake +2 s et Aftershock +25 %). Le proc de crit "deux sorts gratuits" = Elemental Focus (Clearcasting 45542).
 * Tahua : equipement = Five Thunders (6 pieces) + Earthfury Epaulets ; relique equipee dans le dernier releve : Totem of Crackling Thunder (61292).
+
+## Totems : GCD par element (verifie 2026-10-29, spell_template.StartRecoveryCategory)
+* Feu (Searing, Magma, Flametongue) = categorie 105 ; Terre (Strength of Earth, Tremor, Stoneskin) = 106 ; Eau (Mana Spring, Healing Stream, Cleansing) = 107 ; Air (Tranquil Air, Grace of Air) = 108 ;
+  les sorts normaux (Lightning Bolt, chocs, Chain Lightning, Earthquake...) = 133. Exceptions en 133 : Windfury Totem rang 3 (27621) et Fire Nova Totem (11315).
+* Consequence : les 4 totems d'un combo partent dans la MEME image (un par element) ; le totem de feu ne prend pas le GCD de la rotation. Ma premiere analyse (duree du GCD seule) etait fausse ;
+  corrigee grace a l'addon CallOfElements de shaga (octowow.st/git/shaga/CallOfElements, GPL-3.0, commande /coe throwset) et verifiee dans la base.

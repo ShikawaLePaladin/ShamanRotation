@@ -20,7 +20,7 @@ SH.HELP = {
 	manaCl = "Sous cette mana : plus de Flame Shock / Chain Lightning / Earthquake, seulement Lightning Bolt.",
 	autoTarget = "Cible l'ennemi le plus proche quand tu n'as pas de cible.",
 	totemPreset = "Combo de totems pour le bouton Totems : CASTER (Searing, Tranquil Air, Mana Spring), MELEE (Flametongue, Windfury, Strength of Earth, Mana Spring), AOE (Magma), NOVA (Fire Nova), FEAR (+ Tremor), POISON / DISEASE (purification). Clique pour changer.",
-	totemsInCombat = "La rotation pose et entretient seulement le totem de FEU (Searing, ou Magma en AoE) en combat : 1 GCD a chaque fois. Les autres totems : bouton Totems.",
+	totemsInCombat = "La rotation pose et entretient le totem de FEU (Searing, ou Magma en AoE) en combat. Son GCD est celui du FEU (categorie 105 du serveur), pas celui des sorts : la rotation ne perd aucun appui. Les autres totems : bouton Totems.",
 	burstEm = "Le burst utilise Elemental Mastery (recharge 3 min, +% degats Feu/Givre/Nature et sorts moins chers).",
 	burstBf = "Le burst utilise Blood Fury (racial orc).",
 	burstTrinkets = "Le burst utilise aussi tes deux bijoux (s'ils sont a utiliser). Desactive : pas assez de toucher selon ton ami.",
@@ -390,7 +390,7 @@ function SH.BuildTotems(cont)
 	local cy = SH.AddCycle("tot", cont, last, -8, "totemPreset", "Combo", SH.PRESET_LIST, labels)
 	cy:SetWidth(520)
 	local c1 = SH.AddCheck("TotCombat", cont, cy, -6, "La rotation entretient le totem de feu en combat", "totemsInCombat")
-	local b0 = SH.AddButton("totall", cont, c1, -8, "Poser TOUS les totems du combo (automatique)", function() ShamanRotation_TotemsAll() end, 320)
+	local b0 = SH.AddButton("totall", cont, c1, -8, "Poser TOUS les totems du combo (d'un coup)", function() ShamanRotation_TotemsAll() end, 320)
 	local b1 = SH.AddButton("totbtn", cont, b0, -6, "Poser le totem suivant (un par appui)", function() ShamanRotation_Totems() end, 320)
 	local h = SH.AddHeader(cont, b1, -14, "Etat des totems (minuteur)")
 	SH.totemStatus = SH.AddText(cont, h, -8, "")

@@ -63,7 +63,7 @@ function SH.Rotation(now)
 	end
 
 	-- 2. totem de feu en combat (Searing / Magma selon le preset), 1 GCD, seulement si l'option est cochee
-	if CFG.totemsInCombat and SH.TotemFireStep and SH.TotemFireStep(now, aoe) then return true end
+	if CFG.totemsInCombat and SH.TotemFireStep then SH.TotemFireStep(now, aoe) end
 
 	-- 3. Flame Shock entretenu (DoT 15 s) : rafraichi sous fsRefresh s ; Molten Blast (si active) rafraichit le DoT quand les chocs sont en recharge
 	if CFG.useFs and fireOk and rich then
