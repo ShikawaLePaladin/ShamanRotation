@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## Title: |cff0070DEShaman Rotation|r
 ## Notes: Rotation Chaman Elementaire (mono / AoE), totems, burst. Une touche. Compatible Nampower / SuperWoW / UnitXP.
-## Version: 0.1.0
+## Version: 0.2.0
 ## Author: Shikiwa
 ## SavedVariables: ShamanRotationDB
 ShamanRotation.lua
