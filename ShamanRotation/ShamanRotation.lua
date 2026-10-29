@@ -51,6 +51,10 @@ SH.CFG = {
 	totemsInCombat = false, -- le bouton Totems pose le totem manquant ; en rotation seulement le totem de feu (1 GCD)
 	burstEm = true, burstBf = true, burstTrinkets = false, burstTrinketGcd = false,
 	queueWin = 0.25,        -- on prepare le sort suivant dans les 0,25 s avant la fin de l'incantation (Nampower met en file)
+	shield = "water",       -- bouclier elementaire remis automatiquement : "water" | "earth" | "off"
+	shieldAuto = true,      -- hors combat : remis des qu'il disparait (sauf si tu bois / manges)
+	shieldCombat = true,    -- en combat : remis (1 GCD) quand il est consomme
+	shieldMinCharges = 1,   -- remis quand il reste moins de ce nombre de charges (1 = seulement quand il a disparu)
 	relicMode = "off",      -- "off" | "main" (une relique, hors combat) | "spell" (une relique par sort, mode wait uniquement)
 	relicMain = "Totem of Crackling Thunder", relicGap = 25, -- relique du mode main ; espacement minimal entre deux echanges en combat (s)
 	hud = true, hudLocked = false, hudScale = 1.0,   -- indicateur (GCD, recharges, DoT, totems)
@@ -429,6 +433,13 @@ SH.tickFrame:SetScript("OnUpdate", function()
 	SH.tickAcc = 0
 	local now = GetTime()
 	local CFG = SH.CFG
+	-- bouclier elementaire hors combat (1 fois / s suffit)
+	if SH.ShieldStep and now - (SH.shieldTick or -10) >= 1 then
+		SH.shieldTick = now
+		if (not UnitAffectingCombat("player")) and not UnitIsDeadOrGhost("player") and not SH.IsMountedNow() then
+			SH.ShieldStep(now, false)
+		end
+	end
 	if CFG.aoeMode ~= "auto" then
 		SH.autoAoe = false
 		return

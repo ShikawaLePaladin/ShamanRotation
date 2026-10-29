@@ -6,6 +6,7 @@ local STORM, RAGE, CRACK = 23199, 22395, 61292
 local function fresh(equipped, bag)
   SIM.setup(); SIM.load({ relics = {} })
   for k, v in pairs(SH.DEFAULTS) do CFG[k] = v end
+  CFG.shield = "off"
   W.mana = 90000; W.manaMax = 90000
   W.bags = { [0] = bag or {}, [1] = {}, [2] = {}, [3] = {}, [4] = {} }
   W.inv[18] = equipped

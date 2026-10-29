@@ -31,6 +31,10 @@ DEFS["Earth Shock"] = { gcd = true, shock = true, mana = 450, range = 20, hostil
 DEFS["Frost Shock"] = { gcd = true, shock = true, mana = 430, range = 20, hostile = true, tex = "Interface\\Icons\\Spell_Frost_FrostShock", onCast = function() shockCd() end }
 DEFS["Molten Blast"] = { gcd = true, cast = 2.0, mana = 210, range = 30, hostile = true, tex = "Interface\\Icons\\Spell_Fire_Fireball02",
   onCast = function() for i = 1, table.getn(W.target.debuffs) do if W.target.debuffs[i].tex == FS_TEX then W.target.debuffs[i].exp = NOW + 15 end end end }
+-- boucliers elementaires : 3 charges, un seul a la fois (Water 0 mana, Earth 300 mana)
+local function dropShields() for i = table.getn(W.pbuffs), 1, -1 do local s = W.pbuffs[i].sid; if s == 51536 or s == 51526 then table.remove(W.pbuffs, i) end end end
+DEFS["Water Shield"] = { gcd = true, mana = 0, tex = "Interface\\Icons\\Ability_Shaman_WaterShield", onCast = function() dropShields(); SIM.addBuff("Interface\\Icons\\Ability_Shaman_WaterShield", 51536, 3, 600) end }
+DEFS["Earth Shield"] = { gcd = true, mana = 300, tex = "Interface\\Icons\\Spell_Nature_SkinofEarth", onCast = function() dropShields(); SIM.addBuff("Interface\\Icons\\Spell_Nature_SkinofEarth", 51526, 3, 600) end }
 DEFS["Elemental Mastery"] = { gcd = false, cd = 180, mana = 0, tex = "Interface\\Icons\\Spell_Nature_WispHeal" }
 DEFS["Blood Fury"] = { gcd = false, cd = 120, mana = 0, tex = "Interface\\Icons\\Racial_Orc_BerserkerStrength" }
 local TOTEMS = { "Searing Totem", "Magma Totem", "Fire Nova Totem", "Flametongue Totem", "Mana Spring Totem", "Healing Stream Totem", "Poison Cleansing Totem",
@@ -93,7 +97,7 @@ function SIM.setup(opts)
   W.book = {}
   W.defs = DEFS
   local names = opts.book or { "Lightning Bolt", "Chain Lightning", "Earthquake", "Flame Shock", "Earth Shock", "Frost Shock", "Molten Blast", "Elemental Mastery",
-    "Blood Fury", "Searing Totem", "Magma Totem", "Fire Nova Totem", "Flametongue Totem", "Mana Spring Totem", "Tranquil Air Totem", "Windfury Totem",
+    "Blood Fury", "Water Shield", "Earth Shield", "Searing Totem", "Magma Totem", "Fire Nova Totem", "Flametongue Totem", "Mana Spring Totem", "Tranquil Air Totem", "Windfury Totem",
     "Strength of Earth Totem", "Tremor Totem", "Poison Cleansing Totem", "Disease Cleansing Totem" }
   for i = 1, table.getn(names) do W.book[i] = names[i] end
   Fire("SPELLS_CHANGED")

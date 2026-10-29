@@ -12,6 +12,8 @@ local function fresh(opts)
   SH.enemies = { list = {}, plates = 0, known = false, at = -10 }
   SH.castsByGuid = {}
   for k, v in pairs(SH.DEFAULTS) do CFG[k] = v end
+  CFG.shield = "off"   -- les autres suites testent la rotation sans bouclier ; les boucliers ont leur suite plus bas
+  SH.shieldTry = -10; SH.shieldTick = -10
 end
 
 -- ===== 1. mono, 70 s : Flame Shock entretenu, Chain Lightning a chaque retour, Lightning Bolt de remplissage, jamais d'Earth Shock
@@ -229,5 +231,47 @@ local seen = {}
 for i = 1, table.getn(CHAT) do seen[i] = CHAT[i] end
 ok(string.find(table.concat(seen, "|"), "Lightning Bolt : dans ton livre", 1, true) ~= nil, "/shamrot known : sort connu")
 ok(string.find(table.concat(seen, "|"), "Call of the Elements : ABSENT", 1, true) ~= nil, "/shamrot known : sort absent")
+
+
+
+-- ===== bouclier elementaire automatique
+local function hasShield() for i = 1, table.getn(W.pbuffs) do local s = W.pbuffs[i].sid; if s == 51536 or s == 51526 then return s end end return nil end
+local function dropAll() for i = table.getn(W.pbuffs), 1, -1 do local s = W.pbuffs[i].sid; if s == 51536 or s == 51526 then table.remove(W.pbuffs, i) end end end
+fresh(); CFG.shield = "water"; W.combat = false
+Pump(1.2)
+eq(SIM.count("Water Shield"), 1, "hors combat : Water Shield pose tout seul")
+eq(hasShield(), 51536, "... le buff est la")
+Pump(6); eq(SIM.count("Water Shield"), 1, "bouclier present : pas de repose")
+dropAll(); Pump(4.5)
+eq(SIM.count("Water Shield"), 2, "bouclier disparu : remis tout seul")
+fresh(); CFG.shield = "water"; W.combat = false; W.reject = { ["Water Shield"] = true }
+Pump(10)
+ok(SIM.attempts("Water Shield") <= 4, "lancer refuse : pas de rafale de tentatives (" .. SIM.attempts("Water Shield") .. ")")
+fresh(); CFG.shield = "water"
+eq(SIM.press(), "Water Shield", "en combat : Water Shield remis avant la rotation")
+Pump(1.6); eq(SIM.press(), "Flame Shock", "... puis Flame Shock")
+dropAll(); Pump(3.5)
+SIM.run(6, 0.1)
+ok(SIM.count("Water Shield") >= 2, "consomme en combat : remis (" .. SIM.count("Water Shield") .. ")")
+fresh(); CFG.shield = "water"; CFG.shieldCombat = false
+SIM.run(6, 0.1); eq(SIM.count("Water Shield"), 0, "option 'en combat' decochee : pas de bouclier en combat")
+fresh(); CFG.shield = "off"; W.combat = false; Pump(8); eq(SIM.count("Water Shield") + SIM.count("Earth Shield"), 0, "bouclier coupe : rien")
+fresh(); CFG.shield = "water"; CFG.shieldAuto = false; W.combat = false; Pump(8); eq(SIM.count("Water Shield"), 0, "remise auto decochee : rien hors combat")
+fresh(); CFG.shield = "earth"; W.combat = false; SIM.addBuff("Interface\\Icons\\Ability_Shaman_WaterShield", 51536, 3, 600)
+Pump(1.2)
+eq(SIM.count("Earth Shield"), 1, "Earth Shield choisi : remplace Water Shield")
+eq(hasShield(), 51526, "... Earth Shield en place")
+fresh(); CFG.shield = "water"; CFG.shieldMinCharges = 3; W.combat = false; SIM.addBuff("Interface\\Icons\\Ability_Shaman_WaterShield", 51536, 2, 600)
+Pump(1.2); eq(SIM.count("Water Shield"), 1, "reste 2 charges sur 3 demandees : remis")
+fresh(); CFG.shield = "water"; W.combat = false; SIM.addBuff("Interface\\Icons\\INV_Drink_07", 1137, 1, 18)
+Pump(8); eq(SIM.count("Water Shield"), 0, "il boit : pas de bouclier (la boisson serait interrompue)")
+Pump(12); ok(SIM.count("Water Shield") == 1, "apres la boisson : bouclier remis")
+fresh(); CFG.shield = "water"; W.combat = false; SIM.addBuff("Interface\\Icons\\Ability_Mount_RidingHorse", 458, 1, 3600)
+Pump(6); eq(SIM.count("Water Shield"), 0, "monte : pas de bouclier")
+fresh({ book = { "Lightning Bolt", "Chain Lightning", "Flame Shock" } }); CFG.shield = "water"; W.combat = false
+Pump(6); eq(SIM.count("Water Shield"), 0, "Water Shield non appris : rien, aucune erreur")
+fresh(); CFG.shield = "water"; W.combat = false; W.dead = true; Pump(6); eq(SIM.count("Water Shield"), 0, "mort : rien"); W.dead = false
+fresh(); SH.Slash("set shield earth"); eq(CFG.shield, "earth", "/shamrot set shield earth")
+SH.Slash("set shield water")
 
 DONE()

@@ -29,6 +29,9 @@ SH.HELP = {
 	relicMode = "Echange de reliques. COUPE : rien. UNE RELIQUE : la relique choisie est posee HORS combat. PAR SORT : la relique du sort a lancer est equipee en combat (un echange = un GCD de 1,5 s, le sort part a l'appui suivant), au plus un echange toutes les N secondes.",
 	relicMain = "Relique posee hors combat en mode UNE RELIQUE (Totem of Crackling Thunder : 10 % de chances de +8 % vitesse d'incantation sur Lightning Bolt).",
 	relicGap = "Mode PAR SORT : delai minimal entre deux echanges en combat (chaque echange coute 1,5 s de GCD).",
+	shield = "Bouclier elementaire remis automatiquement. WATER SHIELD : 0 mana, chaque attaque qui te touche rend 130 mana (3 charges). EARTH SHIELD : 300 mana, 150 PV par attaque et 30 % de chances de ne pas etre interrompu. Un seul a la fois : le choisi remplace l'autre.",
+	shieldAuto = "Hors combat : remet le bouclier des qu'il disparait (pas pendant que tu bois ou manges, detecte a l'icone du buff).",
+	shieldCombat = "En combat : remet le bouclier quand ses 3 charges sont consommees. Ca coute un GCD de 1,5 s (Water Shield : 0 mana).",
 	hud = "Affiche l'indicateur : GCD, recharges, minuteur de Flame Shock, totems.",
 	hudLocked = "Verrouille la position de l'indicateur (decoche pour le deplacer a la souris).",
 	hudScale = "Taille de l'indicateur.",
@@ -365,7 +368,15 @@ function SH.BuildRotation(cont)
 	local s1 = SH.AddSlider(cont, h, -22, "fsRefresh", "Relancer Flame Shock sous", 1, 10, 0.5, " s")
 	local s2 = SH.AddSlider(cont, s1, -26, "manaCl", "Mana minimum (sorts chers)", 0, 50, 1, " %", true)
 	local s3 = SH.AddSlider(cont, s2, -26, "esFillMana", "Earth Shock de remplissage au-dessus de", 30, 100, 5, " %", true)
-	local h2 = SH.AddHeader(cont, s3, -18, "Diagnostic")
+	local hs = SH.AddHeader(cont, s3, -18, "Bouclier elementaire (remis automatiquement)")
+	local cs = SH.AddCycle("shield", cont, hs, -8, "shield", "Bouclier", { "water", "earth", "off" },
+		{ water = "WATER SHIELD (mana)", earth = "EARTH SHIELD (anti-interruption)", off = "COUPE" })
+	cs:SetWidth(420)
+	local k1 = SH.AddCheck("ShieldAuto", cont, cs, -6, "Hors combat : le remettre des qu'il disparait", "shieldAuto")
+	local k2 = SH.AddCheck("ShieldCombat", cont, k1, -2, "En combat : le remettre quand il est consomme (1 GCD)", "shieldCombat")
+	local ti = SH.AddText(cont, k2, -8, "Water Shield (rang 5) : 0 mana, 3 charges ; chaque attaque qui te touche rend 130 mana (une fois / 3 s). Earth Shield (rang 3) : 300 mana, 3 charges ; "
+		.. "150 PV par attaque et 30 % de chances de ne pas etre interrompu par les degats. Un seul bouclier elementaire a la fois. Si personne ne te frappe, aucun des deux ne fait grand-chose.")
+	local h2 = SH.AddHeader(cont, ti, -14, "Diagnostic")
 	local c7 = SH.AddCheck("Quiet", cont, h2, -6, "Masquer les messages automatiques", "quiet")
 	local c8 = SH.AddCheck("Debug", cont, c7, -2, "Afficher les decisions dans le chat", "debug")
 	cont.last = c8

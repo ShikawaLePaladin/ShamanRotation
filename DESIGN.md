@@ -47,3 +47,8 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
   les sorts normaux (Lightning Bolt, chocs, Chain Lightning, Earthquake...) = 133. Exceptions en 133 : Windfury Totem rang 3 (27621) et Fire Nova Totem (11315).
 * Consequence : les 4 totems d'un combo partent dans la MEME image (un par element) ; le totem de feu ne prend pas le GCD de la rotation. Ma premiere analyse (duree du GCD seule) etait fausse ;
   corrigee grace a l'addon CallOfElements de shaga (octowow.st/git/shaga/CallOfElements, GPL-3.0, commande /coe throwset) et verifiee dans la base.
+
+## Boucliers elementaires (verifie 2026-10-29)
+* Water Shield r5 (51536) : 0 mana, 10 min, 3 charges, GCD normal (133). Chaque attaque qui TOUCHE le chaman (1 fois / 3 s) : +130 mana et une charge. Pas de regeneration passive (l'effet 2, mod regen, vaut 0).
+* Earth Shield r3 (51526) : 300 mana, 10 min, 3 charges. Chaque attaque qui touche : +150 PV ; +30 % de chances de ne pas etre interrompu par les degats. Un seul bouclier elementaire a la fois.
+* Consequence : sans etre touche, aucun des deux ne rapporte quoi que ce soit ; Water coute 0 mana, Earth 300. Water = defaut ; Earth utile quand on prend des coups EN lancant (PvP, adds).

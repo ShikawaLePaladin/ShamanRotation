@@ -62,6 +62,9 @@ function SH.Rotation(now)
 		if natOk and used(SH.TryCast(S.es, true), now, "Earth Shock : interruption") then return true end
 	end
 
+	-- 1b. bouclier elementaire : remis des qu'il est consomme (Water Shield : 0 mana ; 1 GCD)
+	if SH.ShieldStep(now, true) then return true end
+
 	-- 2. totem de feu en combat (Searing / Magma selon le preset), 1 GCD, seulement si l'option est cochee
 	if CFG.totemsInCombat and SH.TotemFireStep then SH.TotemFireStep(now, aoe) end
 

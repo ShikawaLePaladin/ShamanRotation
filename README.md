@@ -17,6 +17,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 | **Immunities** | Learned from the game's "X is immune" message and remembered per mob. `/shamrot immune fire|nature|frost` to set by hand. No hard-coded list. |
 | **Burst** | Elemental Mastery + Blood Fury (instant, no GCD), optional trinkets. Arms itself if they are on cooldown. |
 | **Totems** | Combos: caster, melee, AoE (Magma), Nova, anti-fear (Tremor), poison / disease cleansing. One totem per press **or all four with a single press, in the same frame** (each element has its own GCD category on the server: fire 105, earth 106, water 107, air 108), timers, optional fire-totem upkeep in combat that costs no rotation press. |
+| **Shield** | Water Shield (default) or Earth Shield re-applied automatically when it is gone (out of combat, and in combat for one GCD), not while you drink or ride. |
 | **Relics** | `main` (one relic, equipped out of combat) or `spell` (one relic per spell). **Wait mode only**: equipping in combat costs a 1.5 s GCD (proven in the server source), so the swap takes one press and the spell leaves on the next. |
 | **HUD** | GCD bar, Flame Shock timer, shock / Chain Lightning / Earthquake / Elemental Mastery / Blood Fury cooldowns, the four totem slots. |
 | **Menu** | Fixed-size window with scrolling tabs, tooltips with the default value on every option, minimap button. |
