@@ -102,7 +102,7 @@ eq(SIM.count("Chain Lightning"), 0, "mana 10 % : pas de Chain Lightning")
 eq(SIM.count("Flame Shock"), 0, "mana 10 % : pas de Flame Shock")
 ok(SIM.count("Lightning Bolt") >= 1, "mana 10 % : Lightning Bolt")
 -- refus 'Not enough mana' : le sort est mis de cote jusqu'a ce que la mana remonte
-fresh(); W.mana = 300; CFG.manaCl = 0
+fresh(); W.mana = 300; CFG.manaCl = 0; CFG.manaSaver = false
 SIM.press()
 ok(SH.Blocked("Flame Shock") or SH.Blocked("Chain Lightning") or SH.Blocked("Lightning Bolt"), "refus mana : sort mis de cote")
 local a0 = SIM.attempts("Lightning Bolt") + SIM.attempts("Chain Lightning") + SIM.attempts("Flame Shock")
@@ -378,5 +378,45 @@ ShamanRotation_ClToggle(); eq(CFG.clMode, "off", "bascule -> jamais")
 ShamanRotation_ClToggle(); eq(CFG.clMode, "auto", "bascule -> auto")
 SH.Slash("cl off"); eq(CFG.clMode, "off", "/shamrot cl off")
 SH.Slash("cl"); eq(CFG.clMode, "auto", "/shamrot cl : bascule")
+
+
+
+
+
+-- ===== economie de mana : cout appris + reserve APRES le lancer (petite reserve : un Chain Lightning pese lourd)
+local function pool(max, frac)
+  fresh(); W.manaMax = max; W.mana = max * frac
+end
+-- reserve 1700 : Chain Lightning (605) = 36 % de la barre
+pool(1700, 0.95); CFG.useFs = false; SIM.run(10, 0.1)
+eq(SIM.count("Chain Lightning"), 1, "reserve 1700 a 95 % : un Chain Lightning (il reste 59 %), pas deux")
+pool(1700, 0.95); SIM.run(10, 0.1)
+eq(SIM.count("Chain Lightning"), 0, "reserve 1700 a 95 % : Flame Shock d'abord (reste 71 %), puis Chain Lightning laisserait 35 % : refuse")
+pool(1700, 0.70); SIM.run(10, 0.1)
+eq(SIM.count("Chain Lightning"), 0, "reserve 1700 a 70 % : Chain Lightning laisserait 34 % < 45 % : refuse")
+-- Flame Shock (410 = 24 %) : seulement s'il reste 30 % apres
+pool(1700, 0.50); SIM.run(5, 0.1); eq(SIM.count("Flame Shock"), 0, "reserve 1700 a 50 % : Flame Shock laisserait 26 % < 30 % : refuse")
+pool(1700, 0.60); SIM.run(5, 0.1); eq(SIM.count("Flame Shock"), 1, "reserve 1700 a 60 % : Flame Shock (reste 36 %)")
+-- grosse reserve : aucune restriction visible
+pool(90000, 0.60); SIM.run(10, 0.1); ok(SIM.count("Chain Lightning") >= 1 and SIM.count("Flame Shock") >= 1, "grosse reserve : rotation complete")
+-- economie coupee : comportement d'avant
+pool(1700, 0.70); CFG.manaSaver = false; CFG.clMonoMana = 0.45; SIM.run(10, 0.1)
+ok(SIM.count("Chain Lightning") >= 1, "economie de mana coupee : Chain Lightning part a 70 %")
+-- le cout reel est appris sur tes lancers (mediane) et remplace la valeur du serveur
+pool(90000, 1.0); SIM.press(); Pump(0.5); SIM.press()
+ok(SH.costSamples["Flame Shock"] ~= nil and SH.CostOf("Flame Shock") == 410, "cout appris : Flame Shock = 410")
+SH.costSamples["Chain Lightning"] = { 700, 690, 710 }
+eq(SH.CostOf("Chain Lightning"), 700, "mediane des couts observes")
+eq(SH.CostOf("Lightning Bolt") > 0, true, "cout par defaut du serveur si rien n'est appris")
+-- Clearcasting : cout reduit dans le calcul de la reserve
+pool(1700, 0.70); SIM.addBuff("Interface\\Icons\\Spell_Nature_Lightning", 45542, 1, 30); SIM.run(6, 0.1)
+ok(SIM.count("Chain Lightning") >= 1, "Clearcasting : Chain Lightning (cout reduit) meme a 70 % d'une petite reserve")
+-- bouclier jamais reconnu : lancers espaces (pas de rafale toutes les 3 s)
+fresh(); CFG.shield = "water"; W.combat = false
+SIM.DEFS["Water Shield"].onCast = function() end    -- le sort part mais aucun buff n'apparait
+SH.shieldMiss = 0; SH.shieldWait = 3; SH.shieldCast = nil; SH.shieldSeen = false; SH.shieldTry = -10
+for _ = 1, 60 do Pump(1) end
+ok(SIM.attempts("Water Shield") >= 3 and SIM.attempts("Water Shield") <= 6, "bouclier non reconnu : lancers espaces (" .. SIM.attempts("Water Shield") .. " en 60 s au lieu de 20)")
+ok(ShamanRotationDB.shieldDiag ~= nil, "diagnostic enregistre (buffs vus)")
 
 DONE()

@@ -13,7 +13,10 @@ SH.HELP = {
 	useFs = "Entretient Flame Shock sur la cible (sauf si la cible y est immunisee).",
 	useCl = "Chain Lightning autorise (case maitre). Le MODE (auto / toujours / jamais) se choisit plus bas ou avec la touche dediee.",
 	clMode = "AUTO : economise la mana. Chain Lightning coute 605 mana contre 210 pour Lightning Bolt : sur UNE cible il rapporte ~3 fois moins de degats par mana ; a 3 cibles il est a egalite et fait bien plus de DPS. En auto il part a plusieurs cibles, sous Clearcasting, sous Elemental Mastery, ou tant que ta mana est au-dessus du seuil. TOUJOURS : a chaque retour de recharge (6 s). JAMAIS : coupe.",
-	clMonoMana = "Mode AUTO, une seule cible : Chain Lightning seulement au-dessus de ce pourcentage de mana (reglage a ajuster selon la longueur des combats).",
+	clMonoMana = "Mode AUTO, une seule cible : Chain Lightning seulement s'il te reste au moins ce pourcentage de ta mana MAX apres l'avoir lance (son cout reel est appris sur tes lancers). Plus ta reserve de mana est petite, plus ce sort pese lourd.",
+	manaSaver = "Les sorts chers (Flame Shock, Chain Lightning, Earthquake) ne partent que s'il reste une reserve de mana APRES le lancer. Le cout reel de chaque sort est appris sur tes propres lancers (mediane des 5 derniers). Decoche pour l'ancien comportement.",
+	fsMana = "Flame Shock (410 mana, ~4 fois moins de degats par mana que Lightning Bolt) : lance seulement s'il reste cette fraction de ta mana max apres.",
+	eqMana = "Earthquake en AoE : lance seulement s'il reste cette fraction de ta mana max apres.",
 	clMinTargets = "Mode AUTO : nombre d'ennemis (cible comprise) a moins de la distance de saut a partir duquel Chain Lightning devient rentable.",
 	useEq = "Earthquake en AoE (recharge 16 s, 2,5 s d'incantation, degats de zone autour de la cible).",
 	useMb = "DEDUIT, desactive par defaut : Molten Blast rafraichit Flame Shock (210 mana, 2 s) quand les chocs sont en recharge et que le DoT va expirer.",
@@ -375,10 +378,13 @@ function SH.BuildRotation(cont)
 	local s1 = SH.AddSlider(cont, h, -22, "fsRefresh", "Relancer Flame Shock sous", 1, 10, 0.5, " s")
 	local s2 = SH.AddSlider(cont, s1, -26, "manaCl", "Mana minimum (sorts chers)", 0, 50, 1, " %", true)
 	local s3 = SH.AddSlider(cont, s2, -26, "esFillMana", "Earth Shock de remplissage au-dessus de", 30, 100, 5, " %", true)
-	local ccl = SH.AddCycle("clmode", cont, s3, -22, "clMode", "Chain Lightning", { "auto", "on", "off" },
+	local ms = SH.AddCheck("ManaSaver", cont, s3, -18, "Economie de mana : gros sorts seulement s'il reste une reserve APRES le lancer", "manaSaver")
+	local s3b = SH.AddSlider(cont, ms, -24, "fsMana", "Flame Shock : reserve apres le lancer", 0, 80, 5, " %", true)
+	local s3c = SH.AddSlider(cont, s3b, -26, "eqMana", "Earthquake : reserve apres le lancer", 0, 80, 5, " %", true)
+	local ccl = SH.AddCycle("clmode", cont, s3c, -22, "clMode", "Chain Lightning", { "auto", "on", "off" },
 		{ auto = "AUTO (economise la mana)", on = "TOUJOURS (a chaque recharge)", off = "JAMAIS" })
 	ccl:SetWidth(420)
-	local s4 = SH.AddSlider(cont, ccl, -26, "clMonoMana", "Auto, une seule cible : au-dessus de", 20, 100, 5, " %", true)
+	local s4 = SH.AddSlider(cont, ccl, -26, "clMonoMana", "Chain Lightning (1 cible) : reserve apres le lancer", 10, 90, 5, " %", true)
 	local s5 = SH.AddSlider(cont, s4, -26, "clMinTargets", "Auto : des que cet nombre d'ennemis est proche", 2, 5, 1, "")
 	local hs = SH.AddHeader(cont, s5, -18, "Bouclier elementaire (remis automatiquement)")
 	local cs = SH.AddCycle("shield", cont, hs, -8, "shield", "Bouclier", { "water", "earth", "off" },

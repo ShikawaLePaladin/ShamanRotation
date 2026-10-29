@@ -39,13 +39,16 @@ SH.CFG = {
 	useFs = true,
 	useCl = true,           -- Chain Lightning autorise (case maitre)
 	clMode = "auto",        -- "auto" (economise la mana) | "on" (a chaque retour de recharge) | "off"
-	clMonoMana = 0.60,      -- mode auto, UNE seule cible : Chain Lightning seulement au-dessus de cette mana (ou sous Clearcasting / Elemental Mastery)
+	clMonoMana = 0.45,      -- mode auto, UNE seule cible : Chain Lightning seulement s'il reste cette fraction de mana APRES le lancer (Clearcasting / Elemental Mastery : cout reduit)
 	clMinTargets = 2,       -- mode auto : des que ce nombre d'ennemis est proche de la cible, Chain Lightning saute et devient rentable
 	useEq = true,           -- Earthquake en AoE
 	useMb = false,          -- Molten Blast pour rafraichir Flame Shock (DEDUIT, voir DESIGN.md : desactive par defaut)
 	interrupt = true,       -- Earth Shock pour interrompre une incantation
 	esFill = false,         -- Earth Shock de remplissage (les meilleurs joueurs n'en lancent que ~2/min : desactive)
 	esFillMana = 0.7,       -- ... seulement au-dessus de cette fraction de mana
+	manaSaver = true,       -- economie de mana : les sorts chers ne partent que s'il reste une reserve APRES le lancer (cout reel appris)
+	fsMana = 0.30,          -- Flame Shock : reserve minimale (fraction de la mana max) apres le lancer
+	eqMana = 0.20,          -- Earthquake : reserve minimale apres le lancer
 	manaCl = 0.15,          -- pas de Chain Lightning / Earthquake / Flame Shock sous cette fraction de mana (Lightning Bolt seul)
 	focusExpensive = true,  -- sous Clearcasting : prefere Chain Lightning / Earthquake (sorts les plus chers)
 	autoTarget = true,
@@ -263,8 +266,65 @@ function SH.SetImmune(school, name, on)
 	db.immune[school][name] = on and true or nil
 end
 
+
+-- ========= Cout en mana : appris sur tes propres lancers (mediane des 5 derniers), a defaut valeurs du serveur =========
+-- Valeurs par defaut = spell_template (rang le plus haut connu) ; le cout reel depend de ton rang et de tes talents (Convection -10 %).
+SH.COST_DEFAULT = { ["Lightning Bolt"] = 210, ["Chain Lightning"] = 605, ["Flame Shock"] = 410, ["Earthquake"] = 440, ["Molten Blast"] = 210, ["Earth Shock"] = 450 }
+SH.costSamples = {}
+SH.costPending = nil
+
+function SH.CostOf(name)
+	local t = SH.costSamples[name]
+	local n = t and table.getn(t) or 0
+	if n > 0 then
+		local tmp, i = {}, 0
+		for i = 1, n do tmp[i] = t[i] end
+		table.sort(tmp)
+		return tmp[math.floor((n + 1) / 2)]
+	end
+	return SH.COST_DEFAULT[name] or 0
+end
+
+-- reserve (fraction de la mana max) qu'il resterait apres avoir lance `name` ; Clearcasting / Elemental Mastery reduisent le cout
+function SH.AfterPct(name)
+	local max = UnitManaMax("player")
+	if not max or max <= 0 then return 0 end
+	local cost = SH.CostOf(name)
+	if SH.PlayerBuff and SH.PlayerBuff(SH.IDS.clearcast) ~= nil then cost = cost * 0.5 end
+	if SH.PlayerBuff and SH.PlayerBuff(SH.IDS.em) ~= nil then cost = cost * 0.8 end
+	return (UnitMana("player") - cost) / max
+end
+
+-- apprentissage : mana avant le lancer, relue quand l'incantation finit (ou 0,3 s apres un sort instantane)
+function SH.CostBegin(name)
+	if SH.COST_DEFAULT[name] and not (SH.PlayerBuff and SH.PlayerBuff(SH.IDS.clearcast) ~= nil) then
+		SH.costPending = { name = name, mana = UnitMana("player"), at = GetTime() }
+	else
+		SH.costPending = nil
+	end
+end
+function SH.CostEnd(now)
+	local p = SH.costPending
+	if not p then return end
+	if now - p.at < 0.3 then return end
+	SH.costPending = nil
+	if now - p.at > 6 then return end
+	local cost = p.mana - UnitMana("player")
+	if cost > 20 and cost < 3000 then
+		local t = SH.costSamples[p.name]
+		if not t then t = {}; SH.costSamples[p.name] = t end
+		table.insert(t, cost)
+		while table.getn(t) > 5 do table.remove(t, 1) end
+		local db = ShamanRotationDB
+		if type(db) == "table" then
+			db.costs = db.costs or {}
+			db.costs[p.name] = SH.CostOf(p.name)
+		end
+	end
+end
 -- ========= Lancer =========
 function SH.Cast(name)
+	SH.CostBegin(name)
 	SH.lastCastName = name
 	SH.lastCastAt = GetTime()
 	CastSpellByName(name)
@@ -440,6 +500,7 @@ SH.tickFrame:SetScript("OnUpdate", function()
 	SH.tickAcc = 0
 	local now = GetTime()
 	local CFG = SH.CFG
+	if SH.costPending and now >= SH.castUntil then SH.CostEnd(now) end
 	if SH.TotemWatch and now - (SH.totemWatchAt or -10) >= 0.5 then
 		SH.totemWatchAt = now
 		SH.TotemWatch(now)

@@ -66,3 +66,12 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
   CL ~ 2,2 par coup, donc ~ 2,2 sur UNE cible et ~ 6,7 sur 3 cibles. Une seule cible : CL rapporte ~ 3 fois moins par mana (APPROXIMATION : un seul parse, plusieurs cibles) ; a 3 cibles : a egalite avec LB et beaucoup plus de DPS.
 * Decision : clMode auto (defaut) = Chain Lightning seulement a 2+ ennemis proches de la cible, sous Clearcasting, sous Elemental Mastery, ou tant que la mana > clMonoMana (60 %, a ajuster) ; "on" = a chaque recharge ; "off" = jamais.
   Le seuil de 60 % est un REGLAGE, pas une valeur mesuree.
+
+## Mana trop vite (2026-10-29, trace du client)
+* Trace lue (compte BIJEKER, SavedVariables) : la mana tombait de 96 % a 1 % en ~45 s ; Chain Lightning et Flame Shock pesaient 25 a 35 % de la barre sur ce personnage (petite reserve).
+  Flame Shock = ~4 fois moins de degats par mana que Lightning Bolt (≈ 700 degats pour 410 mana contre 1427 pour 210) ; Chain Lightning une cible : ~3 fois moins.
+* Correction : le cout reel de chaque sort est APPRIS sur tes lancers (mediane des 5 derniers) ; Flame Shock / Chain Lightning (une cible) / Earthquake ne partent que s'il reste une reserve APRES le lancer
+  (defauts : Flame Shock 30 %, Chain Lightning 45 %, Earthquake 20 % de la mana max ; Clearcasting x0,5 et Elemental Mastery x0,8 sur le cout). Lightning Bolt reste le sort de remplissage.
+  Les seuils sont des REGLAGES, pas des valeurs mesurees.
+* Bug trouve dans la meme trace : Water Shield relance toutes les 3 s a 100 % de mana (buff non reconnu). Ajouts : repli par infobulle (nom du buff), temporisation exponentielle (3, 6, 12... 120 s)
+  et enregistrement d'un diagnostic (icones + ID des buffs vus) dans ShamanRotationDB.shieldDiag pour corriger la detection.

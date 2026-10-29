@@ -18,6 +18,7 @@ local function status()
 	local nt = 0
 	local ke
 	for ke in pairs(SH.totemGuid) do nt = nt + 1 end
+	SH.Print("Couts appris (mana) : Lightning Bolt " .. SH.CostOf("Lightning Bolt") .. ", Chain Lightning " .. SH.CostOf("Chain Lightning") .. ", Flame Shock " .. SH.CostOf("Flame Shock") .. ", Earthquake " .. SH.CostOf("Earthquake") .. "  (reserve max : " .. tostring(UnitManaMax("player")) .. ")")
 	SH.Print("Totems (preset " .. CFG.totemPreset .. ") - reperes sur les plaques (distance mesuree) : " .. nt .. (nt == 0 and " (plaques de nom amicales / UnitXP absents ? seul le minuteur decide)" or "") .. " :")
 	local txt = SH.TotemStatus()
 	local line

@@ -49,6 +49,7 @@ function SH.ClAllowed(now, mana, aoe, clearcast)
 	if aoe or clearcast then return true end
 	if SH.autoN and SH.autoN >= CFG.clMinTargets then return true end   -- plusieurs ennemis a portee de saut
 	if SH.PlayerBuff(SH.IDS.em) ~= nil then return true end              -- Elemental Mastery : -20 % de mana
+	if CFG.manaSaver then return SH.AfterPct(SH.SPELLS.cl) >= CFG.clMonoMana end
 	return mana >= CFG.clMonoMana
 end
 
@@ -81,7 +82,7 @@ function SH.Rotation(now)
 	if CFG.totemsInCombat and SH.TotemFireStep then SH.TotemFireStep(now, aoe) end
 
 	-- 3. Flame Shock entretenu (DoT 15 s) : rafraichi sous fsRefresh s ; Molten Blast (si active) rafraichit le DoT quand les chocs sont en recharge
-	if CFG.useFs and fireOk and rich then
+	if CFG.useFs and fireOk and rich and ((not CFG.manaSaver) or SH.AfterPct(S.fs) >= CFG.fsMana) then
 		local remain = SH.FsRemain()
 		if remain <= CFG.fsRefresh then
 			local r = SH.TryCast(S.fs, true)
@@ -102,7 +103,7 @@ function SH.Rotation(now)
 	end
 
 	-- 4. AoE : Earthquake (recharge 16 s, degats de zone a 10 m autour de la cible) puis Chain Lightning
-	if aoe and rich and CFG.useEq and used(SH.TryCast(S.eq, true), now, "Earthquake (AoE)") then return true end
+	if aoe and rich and CFG.useEq and ((not CFG.manaSaver) or SH.AfterPct(S.eq) >= CFG.eqMana) and used(SH.TryCast(S.eq, true), now, "Earthquake (AoE)") then return true end
 
 	-- 5. Chain Lightning. Donnees (serveur + logs) : 605 mana (Lightning Bolt : 210), incantation 1,5 s avec Lightning Mastery, 3 cibles a -30 % par saut.
 	--    Une seule cible : environ 3 fois moins de degats par mana que Lightning Bolt ; a 3 cibles : a egalite et bien plus de DPS.
