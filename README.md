@@ -7,7 +7,7 @@ The priorities come from the **real parses of the best Elementals on OctoWoW** (
 See [DESIGN.md](DESIGN.md) for every proven fact, every estimate and what is still unverified.
 
 ## Install
-Copy the `ShamanRotation` folder into `Interface\AddOns`, then bind keys in *Key Bindings > Shaman Rotation* (rotation, burst, totems, AoE toggle). `/shamrot menu` opens the menu.
+Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then `/shamrot menu` > **Touches** tab: click a button and press the key you want (keyboard, mouse buttons 3/4/5, wheel, with Shift / Ctrl / Alt). You can also bind them in *Key Bindings > Shaman Rotation*.
 
 ## What it does
 | | |

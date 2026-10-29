@@ -201,6 +201,143 @@ end
 -- ===================================================================
 -- Onglets
 -- ===================================================================
+-- ---------- Touches : clic sur un bouton, puis appuie sur la touche (clavier ET souris) ----------
+SH.KEYROWS = {
+	{ "SHAMANROT_ROTATION", "Rotation (une touche)" },
+	{ "SHAMANROT_BURST", "Burst" },
+	{ "SHAMANROT_TOTEMS", "Totems (combo)" },
+	{ "SHAMANROT_AOE", "Mode AoE (bascule)" },
+	{ "SHAMANROT_MENU", "Ouvrir ce menu" },
+}
+SH.keyBtns = {}
+
+function SH.RefreshKeyButtons()
+	local i
+	for i = 1, table.getn(SH.keyBtns) do
+		local b = SH.keyBtns[i]
+		local k1, k2 = GetBindingKey(b.bind)
+		b:SetText(k1 and (k2 and (k1 .. " / " .. k2) or k1) or "Cliquer pour definir")
+	end
+end
+
+function SH.CaptureInput(raw)
+	local cf = SH.keyCap
+	if raw == "ESCAPE" then
+		cf:Hide()
+		SH.RefreshKeyButtons()
+		return
+	end
+	if raw == "UNKNOWN" or raw == "LSHIFT" or raw == "RSHIFT" or raw == "LCTRL" or raw == "RCTRL" or raw == "LALT" or raw == "RALT" then
+		return
+	end
+	local mods, hasMod = "", false
+	if IsAltKeyDown() then mods = mods .. "ALT-"; hasMod = true end
+	if IsControlKeyDown() then mods = mods .. "CTRL-"; hasMod = true end
+	if IsShiftKeyDown() then mods = mods .. "SHIFT-"; hasMod = true end
+	local key = raw
+	if raw == "LeftButton" or raw == "RightButton" then
+		if not hasMod then return end -- clic gauche / droit seuls : ignores (on cliquerait par erreur)
+		if raw == "LeftButton" then key = "BUTTON1" else key = "BUTTON2" end
+	elseif raw == "MiddleButton" then
+		key = "BUTTON3"
+	elseif raw == "Button4" then
+		key = "BUTTON4"
+	elseif raw == "Button5" then
+		key = "BUTTON5"
+	end
+	local combo = mods .. key
+	local bind = cf.bindName
+	-- la touche etait liee a une autre action : on le dit (SetBinding la reprend)
+	local was = GetBindingAction and GetBindingAction(combo) or nil
+	local o1, o2 = GetBindingKey(bind)
+	if o1 then SetBinding(o1, nil) end
+	if o2 then SetBinding(o2, nil) end
+	SetBinding(combo, bind)
+	SaveBindings(GetCurrentBindingSet())
+	SH.Print("Touche " .. (cf.label or bind) .. " -> " .. combo .. ((was and was ~= "" and was ~= bind) and ("  (retiree de : " .. was .. ")") or ""))
+	cf:Hide()
+	SH.RefreshKeyButtons()
+end
+
+function SH.StartKeyCapture(bindName, label)
+	local cf = SH.keyCap
+	if not cf then
+		cf = CreateFrame("Frame", "ShamanRotKeyCapture", UIParent)
+		cf:SetAllPoints(UIParent)
+		cf:SetFrameStrata("FULLSCREEN_DIALOG")
+		cf:EnableMouse(true)
+		cf:EnableMouseWheel(true)
+		cf:EnableKeyboard(true)
+		cf:Hide()
+		local dim = cf:CreateTexture(nil, "BACKGROUND")
+		dim:SetTexture("Interface\\Buttons\\WHITE8x8")
+		dim:SetAllPoints(cf)
+		dim:SetVertexColor(0, 0, 0, 0.6)
+		cf.msg = cf:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+		cf.msg:SetPoint("CENTER", cf, "CENTER", 0, 40)
+		cf.sub = cf:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+		cf.sub:SetPoint("TOP", cf.msg, "BOTTOM", 0, -10)
+		cf.sub:SetText("Appuie sur une touche, un bouton de souris (milieu, 4, 5...) ou la molette.  Maj / Ctrl / Alt acceptes.  Echap = annuler.")
+		cf:SetScript("OnKeyDown", function() SH.CaptureInput(arg1) end)
+		cf:SetScript("OnMouseDown", function() SH.CaptureInput(arg1) end)
+		cf:SetScript("OnMouseWheel", function()
+			if arg1 and arg1 > 0 then SH.CaptureInput("MOUSEWHEELUP") else SH.CaptureInput("MOUSEWHEELDOWN") end
+		end)
+		SH.keyCap = cf
+	end
+	cf.bindName = bindName
+	cf.label = label
+	cf.msg:SetText("Nouvelle touche pour : " .. label)
+	cf:Show()
+end
+
+function SH.BuildKeys(cont)
+	local line = SH.AddHeader(cont, cont, -4, "Touches (clic = definir, Echap = annuler)")
+	local t = SH.AddText(cont, line, -6, "Clique sur un bouton puis appuie sur la touche voulue : clavier, bouton de souris (milieu, 4, 5), molette, avec Maj / Ctrl / Alt si tu veux. "
+		.. "Les clics gauche / droit seuls sont ignores. La touche est enregistree tout de suite (comme dans Echap > Raccourcis).")
+	local prev = t
+	local i
+	for i = 1, table.getn(SH.KEYROWS) do
+		local def = SH.KEYROWS[i]
+		local lab = cont:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		lab:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, (i == 1) and -14 or -10)
+		lab:SetWidth(170)
+		lab:SetJustifyH("LEFT")
+		lab:SetText(def[2])
+		local kb = CreateFrame("Button", "ShamanRotKeyBtn" .. i, cont, "UIPanelButtonTemplate")
+		kb:SetWidth(190)
+		kb:SetHeight(22)
+		kb:SetPoint("LEFT", lab, "LEFT", 174, 0)
+		kb.bind = def[1]
+		kb.klabel = def[2]
+		kb:SetScript("OnClick", function()
+			this:SetText("En attente de la touche...")
+			SH.StartKeyCapture(this.bind, this.klabel)
+		end)
+		local kc = CreateFrame("Button", "ShamanRotKeyClr" .. i, cont, "UIPanelButtonTemplate")
+		kc:SetWidth(70)
+		kc:SetHeight(22)
+		kc:SetPoint("LEFT", kb, "RIGHT", 4, 0)
+		kc:SetText("Retirer")
+		kc.bind = def[1]
+		kc:SetScript("OnClick", function()
+			local o1, o2 = GetBindingKey(this.bind)
+			if o1 then SetBinding(o1, nil) end
+			if o2 then SetBinding(o2, nil) end
+			SaveBindings(GetCurrentBindingSet())
+			SH.Print("Touche retiree.")
+			SH.RefreshKeyButtons()
+		end)
+		table.insert(SH.keyBtns, kb)
+		prev = lab
+	end
+	SH.RefreshKeyButtons()
+	local m = CreateFrame("Frame", nil, cont)
+	m:SetWidth(1)
+	m:SetHeight(1)
+	m:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -20)
+	cont.last = m
+end
 function SH.BuildHome(cont)
 	local last = SH.AddHeader(cont, cont, -4, "Shaman Rotation " .. SH.VERSION .. " - Elementaire")
 	local t = SH.AddText(cont, last, -8, "Une touche (Controles > Raccourcis > Shaman Rotation) : Flame Shock entretenu, Chain Lightning a chaque retour, Lightning Bolt en remplissage, "
@@ -328,6 +465,7 @@ end
 -- ===================================================================
 SH.TAB_DEFS = {
 	{ id = "accueil", label = "Accueil", icon = "Interface\\Icons\\Spell_Nature_Lightning", c = { 0.00, 0.60, 1.00 } },
+	{ id = "touches", label = "Touches", icon = "Interface\\Icons\\INV_Misc_Note_01", c = { 0.95, 0.80, 0.30 } },
 	{ id = "rotation", label = "Rotation", icon = "Interface\\Icons\\Spell_Nature_ChainLightning", c = { 0.40, 0.80, 1.00 } },
 	{ id = "aoe", label = "AoE", icon = "Interface\\Icons\\Spell_Nature_EarthQuake", c = { 0.80, 0.60, 0.30 } },
 	{ id = "totems", label = "Totems", icon = "Interface\\Icons\\Spell_Fire_SearingTotem", c = { 1.00, 0.50, 0.20 } },
@@ -514,6 +652,7 @@ function SH.CreateOptionsPanel()
 	end
 
 	SH.BuildHome(tabContents.accueil)
+	SH.BuildKeys(tabContents.touches)
 	SH.BuildRotation(tabContents.rotation)
 	SH.BuildAoe(tabContents.aoe)
 	SH.BuildTotems(tabContents.totems)
@@ -563,8 +702,11 @@ function SH.RefreshOptions()
 	for i = 1, table.getn(SH.sliders) do SH.sliders[i]:SetValue(SH.sliders[i].getVal()) end
 	SH.refreshing = false
 	for i = 1, table.getn(SH.cycles) do SH.cycles[i]:Refresh() end
+	SH.RefreshKeyButtons()
 	SH.RefreshStatus()
 end
+
+function ShamanRotation_OpenMenu() SH.OpenMenu() end
 
 function SH.OpenMenu(show)
 	SH.CreateOptionsPanel()

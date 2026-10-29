@@ -14,6 +14,7 @@ BINDING_NAME_SHAMANROT_ROTATION = "Rotation (une touche)"
 BINDING_NAME_SHAMANROT_BURST = "Burst"
 BINDING_NAME_SHAMANROT_TOTEMS = "Totems (combo)"
 BINDING_NAME_SHAMANROT_AOE = "Mode AoE (bascule)"
+BINDING_NAME_SHAMANROT_MENU = "Ouvrir le menu"
 
 -- ========= Sorts (noms du jeu, le rang le plus haut est lance par CastSpellByName) =========
 SH.SPELLS = {

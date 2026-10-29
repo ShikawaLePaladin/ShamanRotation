@@ -370,3 +370,5 @@ UseContainerItem = function(bag, slot)
   -- equiper en combat declenche un GCD de 1,5 s (Player.cpp)
   if W.combat then W.gcdStart = NOW; W.gcdEnd = NOW + 1.5 end
 end
+
+GetBindingAction = function(key) for n, k in pairs(W.bindings) do if k == key then return n end end return "" end

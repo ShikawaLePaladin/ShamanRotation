@@ -80,4 +80,48 @@ end)
 -- aucune extension
 try("menu sans extensions", function() W.noRange = true; W.noXP = true; SH.RefreshStatus(); SH.HudUpdate() end)
 
+-- ===== touches : capture clavier / souris dans le menu
+SIM.setup(); SIM.load(nil)
+SH.OpenMenu(true); SH.ShowTab("touches")
+W.bindings = {}
+local function press(raw, shift)
+  W.shift = shift or false
+  this = SH.keyCap; arg1 = raw; SH.keyCap.scripts.OnKeyDown(); W.shift = false
+end
+SH.StartKeyCapture("SHAMANROT_ROTATION", "Rotation (une touche)")
+ok(SH.keyCap:IsShown(), "capture ouverte")
+press("F5")
+eq(W.bindings["SHAMANROT_ROTATION"], "F5", "touche F5 liee a la rotation")
+ok(not SH.keyCap:IsShown(), "capture fermee apres la touche")
+eq(ShamanRotKeyBtn1:GetText(), "F5", "le bouton affiche F5")
+-- changer de touche : l'ancienne est retiree
+SH.StartKeyCapture("SHAMANROT_ROTATION", "Rotation"); press("F6", true)
+eq(W.bindings["SHAMANROT_ROTATION"], "SHIFT-F6", "Maj + F6")
+-- Echap annule
+SH.StartKeyCapture("SHAMANROT_ROTATION", "Rotation"); press("ESCAPE")
+eq(W.bindings["SHAMANROT_ROTATION"], "SHIFT-F6", "Echap : rien ne change")
+-- modificateur seul ignore ; clic gauche seul ignore
+SH.StartKeyCapture("SHAMANROT_ROTATION", "Rotation"); press("LSHIFT"); ok(SH.keyCap:IsShown(), "Maj seule : on attend toujours")
+press("LeftButton"); ok(SH.keyCap:IsShown(), "clic gauche seul : ignore")
+press("Button4"); eq(W.bindings["SHAMANROT_ROTATION"], "BUTTON4", "bouton de souris 4")
+-- molette
+SH.StartKeyCapture("SHAMANROT_BURST", "Burst"); this = SH.keyCap; arg1 = 1; SH.keyCap.scripts.OnMouseWheel()
+eq(W.bindings["SHAMANROT_BURST"], "MOUSEWHEELUP", "molette haut")
+-- une touche deja prise par une autre action lui est reprise
+SH.StartKeyCapture("SHAMANROT_TOTEMS", "Totems"); press("F7")
+SH.StartKeyCapture("SHAMANROT_AOE", "AoE"); press("F7")
+eq(W.bindings["SHAMANROT_AOE"], "F7", "F7 reprise par le mode AoE")
+eq(W.bindings["SHAMANROT_TOTEMS"], nil, "... et retiree des totems")
+-- bouton Retirer
+this = ShamanRotKeyClr2; ShamanRotKeyClr2.scripts.OnClick()
+eq(W.bindings["SHAMANROT_BURST"], nil, "Retirer : touche du burst retiree")
+eq(ShamanRotKeyBtn2:GetText(), "Cliquer pour definir", "... le bouton le dit")
+-- clic sur le bouton : texte d'attente + capture
+this = ShamanRotKeyBtn3; ShamanRotKeyBtn3.scripts.OnClick()
+ok(SH.keyCap:IsShown(), "clic sur le bouton : capture ouverte")
+press("ESCAPE")
+-- menu : liaison
+ok(type(ShamanRotation_OpenMenu) == "function", "fonction ShamanRotation_OpenMenu (liaison Ouvrir le menu)")
+eq(table.getn(SH.KEYROWS), 5, "5 actions liables")
+
 DONE()
