@@ -16,7 +16,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 | **AoE** | Automatic from N enemies within 10 m **of the target** (nameplates + UnitXP), or forced on/off. Earthquake (hits the target and 10 m around it) then Chain Lightning. |
 | **Immunities** | Learned from the game's "X is immune" message and remembered per mob. `/shamrot immune fire|nature|frost` to set by hand. No hard-coded list. |
 | **Burst** | Elemental Mastery + Blood Fury (instant, no GCD), optional trinkets. Arms itself if they are on cooldown. |
-| **Totems** | Combos: caster, melee, AoE (Magma), Nova, anti-fear (Tremor), poison / disease cleansing. One totem per press, timers, optional fire-totem upkeep in combat. |
+| **Totems** | Combos: caster, melee, AoE (Magma), Nova, anti-fear (Tremor), poison / disease cleansing. One totem per press **or all of them with a single press** (automatic sequence, one 1.5 s GCD each, ~6 s for four), timers, optional fire-totem upkeep in combat. |
 | **Relics** | `main` (one relic, equipped out of combat) or `spell` (one relic per spell). **Wait mode only**: equipping in combat costs a 1.5 s GCD (proven in the server source), so the swap takes one press and the spell leaves on the next. |
 | **HUD** | GCD bar, Flame Shock timer, shock / Chain Lightning / Earthquake / Elemental Mastery / Blood Fury cooldowns, the four totem slots. |
 | **Menu** | Fixed-size window with scrolling tabs, tooltips with the default value on every option, minimap button. |

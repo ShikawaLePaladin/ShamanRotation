@@ -205,7 +205,8 @@ end
 SH.KEYROWS = {
 	{ "SHAMANROT_ROTATION", "Rotation (une touche)" },
 	{ "SHAMANROT_BURST", "Burst" },
-	{ "SHAMANROT_TOTEMS", "Totems (combo)" },
+	{ "SHAMANROT_TOTEMS", "Totem suivant du combo" },
+	{ "SHAMANROT_TOTEMS4", "Poser tous les totems" },
 	{ "SHAMANROT_AOE", "Mode AoE (bascule)" },
 	{ "SHAMANROT_MENU", "Ouvrir ce menu" },
 }
@@ -347,7 +348,7 @@ function SH.BuildHome(cont)
 	SH.homeStatus:SetHeight(120)
 	last = SH.AddHeader(cont, SH.homeStatus, -10, "Actions")
 	local b1 = SH.AddButton("burst", cont, last, -8, "Burst (arme / lance)", function() ShamanRotation_Burst() end, 220)
-	local b2 = SH.AddButton("totems", cont, b1, -6, "Totems : poser le suivant du combo", function() ShamanRotation_Totems() end, 260)
+	local b2 = SH.AddButton("totems", cont, b1, -6, "Poser tous les totems du combo", function() ShamanRotation_TotemsAll() end, 260)
 	local b3 = SH.AddButton("aoe", cont, b2, -6, "Mode AoE : auto / on / off", function() ShamanRotation_AoeToggle(); SH.RefreshOptions() end, 220)
 	cont.last = b3
 end
@@ -389,7 +390,8 @@ function SH.BuildTotems(cont)
 	local cy = SH.AddCycle("tot", cont, last, -8, "totemPreset", "Combo", SH.PRESET_LIST, labels)
 	cy:SetWidth(520)
 	local c1 = SH.AddCheck("TotCombat", cont, cy, -6, "La rotation entretient le totem de feu en combat", "totemsInCombat")
-	local b1 = SH.AddButton("totbtn", cont, c1, -8, "Poser le totem suivant", function() ShamanRotation_Totems() end, 220)
+	local b0 = SH.AddButton("totall", cont, c1, -8, "Poser TOUS les totems du combo (automatique)", function() ShamanRotation_TotemsAll() end, 320)
+	local b1 = SH.AddButton("totbtn", cont, b0, -6, "Poser le totem suivant (un par appui)", function() ShamanRotation_Totems() end, 320)
 	local h = SH.AddHeader(cont, b1, -14, "Etat des totems (minuteur)")
 	SH.totemStatus = SH.AddText(cont, h, -8, "")
 	SH.totemStatus:SetHeight(90)

@@ -166,6 +166,7 @@ function ShamanRotation_Execute()
 	local now = GetTime()
 	if UnitIsDeadOrGhost("player") then return end
 	SH.TotemConfirm(now)
+	if SH.totemSeq then return end -- pose des totems en cours : le GCD est pris, la rotation attend
 	if SH.burst.armed then SH.BurstStep(now) end
 	SH.Rotation(now)
 end

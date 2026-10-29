@@ -169,4 +169,47 @@ fresh()
 SH.Slash("reset")
 eq(CFG.fsRefresh, 4.0, "/shamrot reset")
 
+-- ===== tous les totems d'un seul appui : sequence automatique (un GCD de 1,5 s chacun)
+fresh(); CFG.totemPreset = "melee"
+ShamanRotation_TotemsAll()
+Pump(0.05); Pump(0.05)
+local t0 = NOW
+local n = 0
+while NOW - t0 < 8 and SH.totemSeq do Pump(0.05); n = n + 1 end
+eq(SIM.count("Flametongue Totem") + SIM.count("Windfury Totem") + SIM.count("Strength of Earth Totem") + SIM.count("Mana Spring Totem"), 4, "sequence : les 4 totems du combo cac poses en un appui")
+ok(NOW - t0 >= 4.4 and NOW - t0 <= 7.5, "... en environ 4,5 a 7 s (un GCD chacun) : " .. string.format("%.1f", NOW - t0))
+ok(SH.totemSeq == nil, "sequence terminee")
+-- ordre : feu, air, terre, eau ; jamais deux totems dans le meme GCD
+local last = nil; local tooClose = 0
+for i = 1, table.getn(CASTS) do
+  if CASTS[i].ok then if last and CASTS[i].t - last < 1.45 then tooClose = tooClose + 1 end; last = CASTS[i].t end
+end
+eq(tooClose, 0, "chaque totem attend la fin du GCD (aucun lancer refuse)")
+local refused = 0
+for i = 1, table.getn(CASTS) do if not CASTS[i].ok then refused = refused + 1 end end
+eq(refused, 0, "aucun lancer refuse pendant la sequence")
+-- deja en place : rien de plus
+local nb = table.getn(CASTS); ShamanRotation_TotemsAll(); Pump(0.2); Pump(0.2)
+eq(table.getn(CASTS), nb, "totems deja en place : aucune repose")
+-- la rotation attend pendant la sequence
+fresh(); CFG.totemPreset = "caster"
+ShamanRotation_TotemsAll()
+SIM.press()
+eq(SIM.count("Flame Shock") + SIM.count("Lightning Bolt") + SIM.count("Chain Lightning"), 0, "pendant la sequence : la rotation n'envoie rien")
+-- totem non appris : ignore sans bloquer
+fresh({ book = { "Searing Totem", "Tranquil Air Totem", "Lightning Bolt" } }); CFG.totemPreset = "caster"
+ShamanRotation_TotemsAll()
+local t1 = NOW; while NOW - t1 < 8 and SH.totemSeq do Pump(0.05) end
+ok(SH.totemSeq == nil and SIM.count("Searing Totem") == 1 and SIM.count("Tranquil Air Totem") == 1, "Mana Spring non appris : ignore, les autres sont poses")
+-- pas assez de mana : la sequence s'arrete proprement
+fresh(); CFG.totemPreset = "melee"; W.mana = 100
+ShamanRotation_TotemsAll()
+local t2 = NOW; while NOW - t2 < 8 and SH.totemSeq do Pump(0.05) end
+ok(SH.totemSeq == nil, "mana insuffisante : la sequence s'arrete (pas de boucle)")
+-- mort : la sequence s'arrete
+fresh(); CFG.totemPreset = "melee"; ShamanRotation_TotemsAll(); W.dead = true; Pump(0.2); Pump(0.2)
+ok(SH.totemSeq == nil, "mort : sequence annulee")
+SH.Slash("totems all")
+W.dead = false
+
 DONE()

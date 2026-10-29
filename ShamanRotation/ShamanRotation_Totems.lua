@@ -130,3 +130,63 @@ function SH.TotemStatus()
 	end
 	return txt
 end
+
+-- ===================================================================
+-- Tous les totems du combo d'un seul appui : sequence automatique (un GCD de 1,5 s chacun, ~6 s pour 4 totems)
+-- ===================================================================
+SH.totemSeq = nil
+
+function ShamanRotation_TotemsAll()
+	if SH.CFG.totemPreset == "off" then
+		SH.Print("Totems : preset coupe (/shamrot totems caster|melee|aoe|nova|fear|poison|disease).")
+		return
+	end
+	SH.totemSeq = { at = GetTime(), skipped = {} }
+	SH.Print("Pose des totems du combo " .. SH.CFG.totemPreset .. " (un GCD chacun, automatique)...")
+end
+
+-- une etape : pose le premier totem manquant des que le GCD est libre ; vrai tant que la sequence continue
+function SH.TotemSeqStep(now)
+	local q = SH.totemSeq
+	if not q then return false end
+	if UnitIsDeadOrGhost("player") or now - q.at > 15 then
+		SH.totemSeq = nil
+		return false
+	end
+	SH.TotemConfirm(now)
+	if SH.totemPending then return true end            -- on attend de savoir si la pose precedente a pris
+	if now < SH.castUntil then return true end         -- incantation en cours
+	local i, el, want
+	for i = 1, table.getn(SH.TOTEM_ORDER) do
+		el = SH.TOTEM_ORDER[i]
+		want = SH.PresetTotem(el, SH.AoeOn())
+		if want and not q.skipped[el] and not SH.TotemActive(want, now) then
+			if not SH.Known(want) then
+				q.skipped[el] = true                    -- totem non appris : on passe
+				SH.Say(want .. " : non appris, ignore.")
+			elseif SH.Blocked(want) then
+				SH.Print("Pose des totems interrompue : pas assez de mana pour " .. want .. ".")
+				SH.totemSeq = nil
+				return false
+			elseif SH.CdInfo(want) > 0 then
+				return true                             -- GCD en cours : on attend
+			else
+				SH.PlaceTotem(want, now)
+				return true
+			end
+		end
+	end
+	SH.totemSeq = nil
+	SH.Print("Totems en place (combo " .. SH.CFG.totemPreset .. ").")
+	return false
+end
+
+SH.totemSeqFrame = CreateFrame("Frame", "ShamanRotationTotemSeqFrame")
+SH.totemSeqAcc = 0
+SH.totemSeqFrame:SetScript("OnUpdate", function()
+	if not SH.totemSeq then return end
+	SH.totemSeqAcc = SH.totemSeqAcc + (arg1 or 0)
+	if SH.totemSeqAcc < 0.05 then return end
+	SH.totemSeqAcc = 0
+	SH.TotemSeqStep(GetTime())
+end)

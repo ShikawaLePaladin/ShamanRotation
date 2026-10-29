@@ -5,7 +5,7 @@
 local SH = ShamanRotation
 
 local function help()
-	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
+	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [all|caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
 	SH.Print("   menu | hud | relic | status | set <cle> <valeur> | debug | trace | reset")
 end
 
@@ -62,7 +62,9 @@ function SH.Slash(msg)
 	elseif cmd == "burst" then
 		ShamanRotation_Burst()
 	elseif cmd == "totems" then
-		if rest ~= "" then
+		if rest == "all" or rest == "tous" then
+			ShamanRotation_TotemsAll()
+		elseif rest ~= "" then
 			local ok, i = false, 0
 			for i = 1, table.getn(SH.PRESET_LIST) do
 				if SH.PRESET_LIST[i] == rest then ok = true end
