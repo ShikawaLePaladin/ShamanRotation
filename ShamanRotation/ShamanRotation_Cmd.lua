@@ -6,7 +6,7 @@ local SH = ShamanRotation
 
 local function help()
 	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [all|caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
-	SH.Print("   diag (verifie l'installation) | cl [aoe|auto|on|off] | menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
+	SH.Print("   bind (touches) | diag (verifie l'installation) | cl [aoe|auto|on|off] | menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
 end
 
 local function status()
@@ -71,9 +71,36 @@ function SH.Slash(msg)
 		SH.Print("   modules ABSENTS : " .. (miss == "" and "aucun" or (miss .. " -> le fichier correspondant n'a pas ete lu : verifie le dossier Interface/AddOns/ShamanRotation (noms exacts, pas de \\ dans les noms)")))
 		SH.Print("   interface : indicateur " .. (SH.hud and "ok" or "ABSENT") .. ", boutons " .. (SH.btnFrame and "ok" or "ABSENT") .. ", minimap " .. (SH.mmButton and "ok" or "ABSENT")
 			.. ", sauvegarde " .. (type(ShamanRotationDB) == "table" and "ok" or "ABSENTE"))
+		local kk = SH.KeysOf("SHAMANROT_ROTATION")
+		SH.Print("   touche de la rotation : " .. (kk[1] or "AUCUNE (menu > Touches, ou /shamrot bind rotation F5)") .. "  | boutons de liaison : " .. (SH.cmdBtns and SH.cmdBtns.ROTATION and "ok" or "ABSENTS"))
 		SH.Print("   extensions : Nampower " .. (type(IsSpellInRange) == "function" and "oui" or "non") .. ", UnitXP " .. (type(UnitXP) == "function" and "oui" or "non")
 			.. ", SuperWoW " .. (type(SUPERWOW_VERSION) ~= "nil" and "oui" or "non") .. "  (toutes optionnelles)")
-		SH.Print("   sorts connus : Lightning Bolt " .. tostring(SH.Known("Lightning Bolt")) .. ", Chain Lightning " .. tostring(SH.Known("Chain Lightning")) .. ", Flame Shock " .. tostring(SH.Known("Flame Shock")))	elseif cmd == "menu" or cmd == "config" then
+		SH.Print("   sorts connus : Lightning Bolt " .. tostring(SH.Known("Lightning Bolt")) .. ", Chain Lightning " .. tostring(SH.Known("Chain Lightning")) .. ", Flame Shock " .. tostring(SH.Known("Flame Shock")))	elseif cmd == "bind" or cmd == "touche" then
+		-- /shamrot bind                       : liste les touches
+		-- /shamrot bind <action> <TOUCHE>     : lie une touche sans passer par le menu (ex. /shamrot bind rotation F5, /shamrot bind burst SHIFT-F6)
+		-- /shamrot bind <action> none         : retire la touche
+		local names = { rotation = "SHAMANROT_ROTATION", burst = "SHAMANROT_BURST", totems = "SHAMANROT_TOTEMS", totems4 = "SHAMANROT_TOTEMS4", cl = "SHAMANROT_CL",
+			clswitch = "SHAMANROT_CLSWITCH", hud = "SHAMANROT_HUD", aoe = "SHAMANROT_AOE", menu = "SHAMANROT_MENU" }
+		local _, _, act, key = string.find(rest, "^(%S+)%s+(%S+)$")
+		if act and names[string.lower(act)] then
+			local nm = names[string.lower(act)]
+			if string.lower(key) == "none" or string.lower(key) == "rien" then
+				SH.ClearKeysOf(nm)
+				SaveBindings(GetCurrentBindingSet())
+				SH.Print("Touche retiree : " .. string.lower(act))
+			else
+				SH.BindKey(nm, string.upper(key))
+				SH.Print("Touche " .. string.lower(act) .. " -> " .. string.upper(key))
+			end
+			if SH.RefreshKeyButtons then SH.RefreshKeyButtons() end
+		else
+			local k, v
+			for k, v in pairs(names) do
+				local keys = SH.KeysOf(v)
+				SH.Print("   " .. k .. " : " .. (keys[1] or "(aucune)") .. (keys[2] and (" / " .. keys[2]) or ""))
+			end
+			SH.Print("   /shamrot bind <rotation|burst|totems|totems4|cl|clswitch|hud|aoe|menu> <TOUCHE|none>   ex. /shamrot bind rotation F5")
+		end	elseif cmd == "menu" or cmd == "config" then
 		SH.OpenMenu()
 	elseif cmd == "hud" then
 		ShamanRotation_HudToggle()

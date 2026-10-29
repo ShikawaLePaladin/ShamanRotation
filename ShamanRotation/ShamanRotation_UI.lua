@@ -230,12 +230,67 @@ SH.KEYROWS = {
 }
 SH.keyBtns = {}
 
+-- ---------- Liaison des touches INDEPENDANTE de Bindings.xml ----------
+-- Chaque action a un petit bouton invisible ; la touche est liee a "CLICK <bouton>:LeftButton". Ca marche meme si le fichier Bindings.xml n'a pas
+-- ete charge (archive mal extraite, Linux...). Les anciennes liaisons "SHAMANROT_*" (Bindings.xml) restent reconnues et sont reprises.
+SH.CMDFUNC = { ROTATION = "ShamanRotation_Execute", BURST = "ShamanRotation_Burst", TOTEMS = "ShamanRotation_Totems", TOTEMS4 = "ShamanRotation_TotemsAll",
+	CL = "ShamanRotation_ClToggle", CLSWITCH = "ShamanRotation_ClSwitch", HUD = "ShamanRotation_HudToggle", AOE = "ShamanRotation_AoeToggle", MENU = "ShamanRotation_OpenMenu" }
+SH.cmdBtns = {}
+function SH.ClickCmd(name)
+	return "CLICK ShamanRotationCmd_" .. string.sub(name, 11) .. ":LeftButton"
+end
+function SH.BuildCmdButtons()
+	local act, fn
+	for act, fn in pairs(SH.CMDFUNC) do
+		if not SH.cmdBtns[act] then
+			local b = CreateFrame("Button", "ShamanRotationCmd_" .. act, UIParent)
+			b:SetWidth(1)
+			b:SetHeight(1)
+			b:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+			b.act = act
+			b:SetScript("OnClick", function()
+				-- anti-rebond des actions de bascule : un appui ne doit jamais compter deux fois (la rotation et le burst, eux, repondent a chaque appui)
+				if this.act ~= "ROTATION" and this.act ~= "BURST" then
+					local now = GetTime()
+					if this.last and now - this.last < 0.12 then return end
+					this.last = now
+				end
+				local f = getglobal(SH.CMDFUNC[this.act])
+				if f then f() end
+			end)
+			SH.cmdBtns[act] = b
+		end
+	end
+end
+SH.BuildCmdButtons()
+
+-- touches liees a une action (nouvelle liaison + ancienne de Bindings.xml)
+function SH.KeysOf(name)
+	local out = {}
+	local a1, a2 = GetBindingKey(SH.ClickCmd(name))
+	local b1, b2 = GetBindingKey(name)
+	if a1 then table.insert(out, a1) end
+	if a2 then table.insert(out, a2) end
+	if b1 then table.insert(out, b1) end
+	if b2 then table.insert(out, b2) end
+	return out
+end
+function SH.ClearKeysOf(name)
+	local keys = SH.KeysOf(name)
+	local i
+	for i = 1, table.getn(keys) do SetBinding(keys[i], nil) end
+end
+function SH.BindKey(name, combo)
+	SH.ClearKeysOf(name)
+	SetBinding(combo, SH.ClickCmd(name))
+	SaveBindings(GetCurrentBindingSet())
+end
 function SH.RefreshKeyButtons()
 	local i
 	for i = 1, table.getn(SH.keyBtns) do
 		local b = SH.keyBtns[i]
-		local k1, k2 = GetBindingKey(b.bind)
-		b:SetText(k1 and (k2 and (k1 .. " / " .. k2) or k1) or "Cliquer pour definir")
+		local keys = SH.KeysOf(b.bind)
+		b:SetText(keys[1] and (keys[2] and (keys[1] .. " / " .. keys[2]) or keys[1]) or "Cliquer pour definir")
 	end
 end
 
@@ -268,12 +323,8 @@ function SH.CaptureInput(raw)
 	local bind = cf.bindName
 	-- la touche etait liee a une autre action : on le dit (SetBinding la reprend)
 	local was = GetBindingAction and GetBindingAction(combo) or nil
-	local o1, o2 = GetBindingKey(bind)
-	if o1 then SetBinding(o1, nil) end
-	if o2 then SetBinding(o2, nil) end
-	SetBinding(combo, bind)
-	SaveBindings(GetCurrentBindingSet())
-	SH.Print("Touche " .. (cf.label or bind) .. " -> " .. combo .. ((was and was ~= "" and was ~= bind) and ("  (retiree de : " .. was .. ")") or ""))
+	SH.BindKey(bind, combo)
+	SH.Print("Touche " .. (cf.label or bind) .. " -> " .. combo .. ((was and was ~= "" and was ~= SH.ClickCmd(bind) and was ~= bind) and ("  (retiree de : " .. was .. ")") or ""))
 	cf:Hide()
 	SH.RefreshKeyButtons()
 end
@@ -340,9 +391,7 @@ function SH.BuildKeys(cont)
 		kc:SetText("Retirer")
 		kc.bind = def[1]
 		kc:SetScript("OnClick", function()
-			local o1, o2 = GetBindingKey(this.bind)
-			if o1 then SetBinding(o1, nil) end
-			if o2 then SetBinding(o2, nil) end
+			SH.ClearKeysOf(this.bind)
 			SaveBindings(GetCurrentBindingSet())
 			SH.Print("Touche retiree.")
 			SH.RefreshKeyButtons()

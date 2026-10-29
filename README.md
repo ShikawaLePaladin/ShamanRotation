@@ -7,7 +7,7 @@ The priorities come from the **real parses of the best Elementals on OctoWoW** (
 See [DESIGN.md](DESIGN.md) for every proven fact, every estimate and what is still unverified.
 
 ## Install
-Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then `/shamrot menu` > **Touches** tab: click a button and press the key you want (keyboard, mouse buttons 3/4/5, wheel, with Shift / Ctrl / Alt). You can also bind them in *Key Bindings > Shaman Rotation*.
+Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then `/shamrot menu` > **Touches** tab: click a button and press the key you want (keyboard, mouse buttons 3/4/5, wheel, with Shift / Ctrl / Alt). Keys chosen there are bound to small invisible buttons of the addon, so they work **even if `Bindings.xml` was not loaded** (Linux, badly extracted archive). Without the menu: `/shamrot bind rotation F5`, `/shamrot bind burst SHIFT-F6`, `/shamrot bind` lists them. You can also bind them in *Key Bindings > Shaman Rotation*.
 
 ## What it does
 | | |
@@ -35,7 +35,7 @@ Copy the `ShamanRotation` folder into `Interface\AddOns`, restart the game, then
 3. Restart the game completely, then type `/shamrot diag`: it lists the modules that loaded, the extensions found (Nampower / UnitXP / SuperWoW, all optional) and what is missing.
 Typical Lutris/Wine locations: `~/Games/<game>/drive_c/.../Interface/AddOns` or inside your Wine prefix.
 ## Commands
-`/shamrot` (or `/shaman`): `menu`, `hud`, `status`, `aoe [auto|on|off]`, `burst`, `totems [preset]`, `relic [mode off|main|spell]`, `immune fire|nature|frost [clear]`, `set <key> <value>`, `diag`, `debug`, `trace`, `reset`.
+`/shamrot` (or `/shaman`): `menu`, `hud`, `status`, `aoe [auto|on|off]`, `burst`, `totems [preset]`, `relic [mode off|main|spell]`, `immune fire|nature|frost [clear]`, `set <key> <value>`, `bind [action key|none]`, `diag`, `debug`, `trace`, `reset`.
 
 ## Things worth knowing (verified on the server data)
 * Flame Shock, Earth Shock and Frost Shock **share one 6 s cooldown and each has a 1.5 s GCD**: an Earth Shock cannot be slipped between GCDs.
