@@ -6,7 +6,7 @@ local SH = ShamanRotation
 
 local function help()
 	SH.Print("v" .. SH.VERSION .. " - /shamrot aoe [auto|on|off] | burst | totems [all|caster|melee|aoe|nova|fear|poison|disease|off] | immune fire|nature|frost [clear]")
-	SH.Print("   menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
+	SH.Print("   cl [auto|on|off] | menu | hud | relic | known <sort> | status | set <cle> <valeur> | debug | trace | reset")
 end
 
 local function status()
@@ -71,6 +71,13 @@ function SH.Slash(msg)
 			SH.Print("Mode AoE : " .. rest)
 		else
 			ShamanRotation_AoeToggle()
+		end
+	elseif cmd == "cl" then
+		if rest == "auto" or rest == "on" or rest == "off" then
+			SH.SetSetting("clMode", rest)
+			SH.Print("Chain Lightning : " .. rest)
+		else
+			ShamanRotation_ClToggle()
 		end
 	elseif cmd == "burst" then
 		ShamanRotation_Burst()

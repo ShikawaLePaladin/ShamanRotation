@@ -11,7 +11,10 @@ SH.HELP = {
 	aoeRadius = "Rayon de comptage autour de la CIBLE (m). Earthquake touche la cible et les ennemis a 10 m autour d'elle (Spell.dbc).",
 	fsRefresh = "Flame Shock est relance quand il reste moins de ce temps sur le DoT (15 s). Les meilleurs joueurs le relancent toutes les ~10,7 s, soit vers 4 s restantes.",
 	useFs = "Entretient Flame Shock sur la cible (sauf si la cible y est immunisee).",
-	useCl = "Chain Lightning a chaque retour de sa recharge (6 s). Les meilleurs joueurs : 6,9 lancers par minute.",
+	useCl = "Chain Lightning autorise (case maitre). Le MODE (auto / toujours / jamais) se choisit plus bas ou avec la touche dediee.",
+	clMode = "AUTO : economise la mana. Chain Lightning coute 605 mana contre 210 pour Lightning Bolt : sur UNE cible il rapporte ~3 fois moins de degats par mana ; a 3 cibles il est a egalite et fait bien plus de DPS. En auto il part a plusieurs cibles, sous Clearcasting, sous Elemental Mastery, ou tant que ta mana est au-dessus du seuil. TOUJOURS : a chaque retour de recharge (6 s). JAMAIS : coupe.",
+	clMonoMana = "Mode AUTO, une seule cible : Chain Lightning seulement au-dessus de ce pourcentage de mana (reglage a ajuster selon la longueur des combats).",
+	clMinTargets = "Mode AUTO : nombre d'ennemis (cible comprise) a moins de la distance de saut a partir duquel Chain Lightning devient rentable.",
 	useEq = "Earthquake en AoE (recharge 16 s, 2,5 s d'incantation, degats de zone autour de la cible).",
 	useMb = "DEDUIT, desactive par defaut : Molten Blast rafraichit Flame Shock (210 mana, 2 s) quand les chocs sont en recharge et que le DoT va expirer.",
 	interrupt = "Earth Shock pour interrompre l'incantation de la cible (2 s). Demande SuperWoW pour voir les incantations ennemies.",
@@ -213,6 +216,7 @@ SH.KEYROWS = {
 	{ "SHAMANROT_BURST", "Burst" },
 	{ "SHAMANROT_TOTEMS", "Totem suivant du combo" },
 	{ "SHAMANROT_TOTEMS4", "Poser tous les totems" },
+	{ "SHAMANROT_CL", "Chain Lightning (bascule)" },
 	{ "SHAMANROT_AOE", "Mode AoE (bascule)" },
 	{ "SHAMANROT_MENU", "Ouvrir ce menu" },
 }
@@ -362,7 +366,7 @@ end
 function SH.BuildRotation(cont)
 	local last = SH.AddHeader(cont, cont, -4, "Sorts de la rotation")
 	local c1 = SH.AddCheck("UseFs", cont, last, -6, "Entretenir Flame Shock", "useFs")
-	local c2 = SH.AddCheck("UseCl", cont, c1, -2, "Chain Lightning a chaque retour de recharge", "useCl")
+	local c2 = SH.AddCheck("UseCl", cont, c1, -2, "Chain Lightning autorise", "useCl")
 	local c3 = SH.AddCheck("Interrupt", cont, c2, -2, "Interrompre avec Earth Shock", "interrupt")
 	local c4 = SH.AddCheck("EsFill", cont, c3, -2, "Earth Shock de remplissage (non recommande)", "esFill")
 	local c5 = SH.AddCheck("UseMb", cont, c4, -2, "Molten Blast pour rafraichir Flame Shock (deduit)", "useMb")
@@ -371,7 +375,12 @@ function SH.BuildRotation(cont)
 	local s1 = SH.AddSlider(cont, h, -22, "fsRefresh", "Relancer Flame Shock sous", 1, 10, 0.5, " s")
 	local s2 = SH.AddSlider(cont, s1, -26, "manaCl", "Mana minimum (sorts chers)", 0, 50, 1, " %", true)
 	local s3 = SH.AddSlider(cont, s2, -26, "esFillMana", "Earth Shock de remplissage au-dessus de", 30, 100, 5, " %", true)
-	local hs = SH.AddHeader(cont, s3, -18, "Bouclier elementaire (remis automatiquement)")
+	local ccl = SH.AddCycle("clmode", cont, s3, -22, "clMode", "Chain Lightning", { "auto", "on", "off" },
+		{ auto = "AUTO (economise la mana)", on = "TOUJOURS (a chaque recharge)", off = "JAMAIS" })
+	ccl:SetWidth(420)
+	local s4 = SH.AddSlider(cont, ccl, -26, "clMonoMana", "Auto, une seule cible : au-dessus de", 20, 100, 5, " %", true)
+	local s5 = SH.AddSlider(cont, s4, -26, "clMinTargets", "Auto : des que cet nombre d'ennemis est proche", 2, 5, 1, "")
+	local hs = SH.AddHeader(cont, s5, -18, "Bouclier elementaire (remis automatiquement)")
 	local cs = SH.AddCycle("shield", cont, hs, -8, "shield", "Bouclier", { "water", "earth", "off" },
 		{ water = "WATER SHIELD (mana)", earth = "EARTH SHIELD (anti-interruption)", off = "COUPE" })
 	cs:SetWidth(420)
@@ -866,6 +875,12 @@ function SH.HudUpdate()
 	setCd(ic.shock, rShock)
 	local _, rCl = SH.CdInfo(S.cl)
 	setCd(ic.cl, rCl)
+	if SH.CFG.clMode == "off" then
+		ic.cl.tex:SetVertexColor(0.7, 0.2, 0.2)
+		ic.cl.txt:SetText("OFF")
+	elseif SH.CFG.clMode == "auto" and not (rCl and rCl > 0.05) then
+		ic.cl.txt:SetText("A")
+	end
 	local _, rEq = SH.CdInfo(S.eq)
 	setCd(ic.eq, rEq)
 	local _, rEm = SH.CdInfo(S.em)

@@ -335,4 +335,48 @@ eq(SIM.count("Strength of Earth Totem"), 1, "... et aucune repose")
 setupTotems(); W.dead = true; PLATES[1].dist = 40; Pump(2)
 eq(SIM.count("Strength of Earth Totem"), 1, "mort : pas de repose"); W.dead = false
 
+
+
+-- ===== Chain Lightning : auto (economise la mana) / toujours / jamais
+local function clRun(mode, mana, secs)
+  fresh(); CFG.clMode = mode; W.manaMax = 90000; W.mana = 90000 * mana
+  SIM.run(secs or 20, 0.1)
+  return SIM.count("Chain Lightning")
+end
+ok(clRun("on", 0.30) >= 1, "mode toujours : Chain Lightning meme a 30 % de mana")
+eq(clRun("off", 1.0), 0, "mode jamais : aucun Chain Lightning")
+ok(clRun("auto", 0.90) >= 2, "auto, mana 90 % : Chain Lightning utilise")
+eq(clRun("auto", 0.40), 0, "auto, une cible, mana 40 % : Lightning Bolt seulement (mana economisee)")
+ok(SIM.count("Lightning Bolt") >= 3, "... la rotation continue en Lightning Bolt")
+-- plusieurs ennemis proches : Chain Lightning rentable meme a mana moyenne
+fresh(); CFG.clMode = "auto"; W.manaMax = 90000; W.mana = 36000; PLATES = { { guid = "0xA", dist = 0 }, { guid = "0xB", dist = 5 } }
+SIM.run(20, 0.1)
+ok(SIM.count("Chain Lightning") >= 1, "auto, 2 ennemis proches, mana 40 % : Chain Lightning (il saute)")
+fresh(); CFG.clMode = "auto"; CFG.clMinTargets = 3; W.manaMax = 90000; W.mana = 36000; PLATES = { { guid = "0xA", dist = 0 }, { guid = "0xB", dist = 5 } }
+SIM.run(20, 0.1)
+eq(SIM.count("Chain Lightning"), 0, "clMinTargets 3 : 2 ennemis ne suffisent pas")
+-- AoE active : Chain Lightning
+fresh(); CFG.clMode = "auto"; CFG.aoeMode = "on"; W.manaMax = 90000; W.mana = 36000
+SIM.run(20, 0.1); ok(SIM.count("Chain Lightning") >= 1, "auto + AoE : Chain Lightning meme a mana basse")
+-- Clearcasting / Elemental Mastery
+fresh(); CFG.clMode = "auto"; W.manaMax = 90000; W.mana = 36000; SIM.addBuff("Interface\\Icons\\Spell_Nature_Lightning", 45542, 1, 30)
+SIM.run(6, 0.1); ok(SIM.count("Chain Lightning") >= 1, "auto + Clearcasting : Chain Lightning")
+fresh(); CFG.clMode = "auto"; W.manaMax = 90000; W.mana = 36000; SIM.addBuff("Interface\\Icons\\Spell_Nature_WispHeal", 16166, 1, 15)
+SIM.run(6, 0.1); ok(SIM.count("Chain Lightning") >= 1, "auto + Elemental Mastery : Chain Lightning")
+-- seuil reglable
+fresh(); CFG.clMode = "auto"; CFG.clMonoMana = 0.30; W.manaMax = 90000; W.mana = 45000
+SIM.run(10, 0.1); ok(SIM.count("Chain Lightning") >= 1, "seuil 30 % : Chain Lightning a 50 %")
+-- sous manaCl : jamais, quel que soit le mode
+fresh(); CFG.clMode = "on"; W.manaMax = 90000; W.mana = 9000
+SIM.run(10, 0.1); eq(SIM.count("Chain Lightning"), 0, "mode toujours mais mana sous le minimum : pas de Chain Lightning")
+-- case maitre
+fresh(); CFG.clMode = "on"; CFG.useCl = false; SIM.run(10, 0.1); eq(SIM.count("Chain Lightning"), 0, "case maitre decochee : jamais")
+-- bascule
+fresh(); eq(CFG.clMode, "auto", "defaut : auto")
+ShamanRotation_ClToggle(); eq(CFG.clMode, "on", "bascule -> toujours")
+ShamanRotation_ClToggle(); eq(CFG.clMode, "off", "bascule -> jamais")
+ShamanRotation_ClToggle(); eq(CFG.clMode, "auto", "bascule -> auto")
+SH.Slash("cl off"); eq(CFG.clMode, "off", "/shamrot cl off")
+SH.Slash("cl"); eq(CFG.clMode, "auto", "/shamrot cl : bascule")
+
 DONE()

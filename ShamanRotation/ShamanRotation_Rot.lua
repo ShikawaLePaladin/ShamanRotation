@@ -40,6 +40,18 @@ local function used(r, now, txt)
 	return false
 end
 
+-- Chain Lightning est-il autorise maintenant ? (voir clMode)
+function SH.ClAllowed(now, mana, aoe, clearcast)
+	local CFG = SH.CFG
+	local mode = CFG.clMode
+	if mode == "off" then return false end
+	if mode == "on" then return true end
+	if aoe or clearcast then return true end
+	if SH.autoN and SH.autoN >= CFG.clMinTargets then return true end   -- plusieurs ennemis a portee de saut
+	if SH.PlayerBuff(SH.IDS.em) ~= nil then return true end              -- Elemental Mastery : -20 % de mana
+	return mana >= CFG.clMonoMana
+end
+
 -- Un sort de la liste est lance : retourne vrai (l'appui est consomme)
 function SH.Rotation(now)
 	local CFG = SH.CFG
@@ -92,10 +104,13 @@ function SH.Rotation(now)
 	-- 4. AoE : Earthquake (recharge 16 s, degats de zone a 10 m autour de la cible) puis Chain Lightning
 	if aoe and rich and CFG.useEq and used(SH.TryCast(S.eq, true), now, "Earthquake (AoE)") then return true end
 
-	-- 5. Chain Lightning a chaque retour de recharge (les meilleurs joueurs : 6,9 lancers/min pour une recharge de 6 s) ;
-	--    sous Clearcasting ce sort (le plus cher) passe en premier
-	if CFG.useCl and rich and used(SH.TryCast(S.cl, true), now, clearcast and "Chain Lightning (Clearcasting)" or (aoe and "Chain Lightning (AoE)" or "Chain Lightning")) then return true end
-
+	-- 5. Chain Lightning. Donnees (serveur + logs) : 605 mana (Lightning Bolt : 210), incantation 1,5 s avec Lightning Mastery, 3 cibles a -30 % par saut.
+	--    Une seule cible : environ 3 fois moins de degats par mana que Lightning Bolt ; a 3 cibles : a egalite et bien plus de DPS.
+	--    Mode "on" : a chaque retour de recharge (6 s). Mode "auto" : a plusieurs cibles, ou sous Clearcasting / Elemental Mastery (sorts moins chers),
+	--    ou tant que la mana reste au-dessus de clMonoMana. Mode "off" : jamais.
+	if CFG.useCl and rich and SH.ClAllowed(now, mana, aoe, clearcast) then
+		if used(SH.TryCast(S.cl, true), now, clearcast and "Chain Lightning (Clearcasting)" or (aoe and "Chain Lightning (AoE)" or "Chain Lightning")) then return true end
+	end
 	-- 6. Earth Shock de remplissage (desactive par defaut : ~2/min chez les meilleurs joueurs)
 	if CFG.esFill and natOk and mana >= CFG.esFillMana and used(SH.TryCast(S.es, true), now, "Earth Shock (remplissage)") then return true end
 
@@ -180,4 +195,15 @@ function ShamanRotation_AoeToggle()
 	SH.SetSetting("aoeMode", nxt)
 	SH.autoAoe = false
 	SH.Print("Mode AoE : " .. nxt .. ((nxt == "auto") and " (selon le nombre d'ennemis)" or ""))
+end
+
+-- bascule Chain Lightning : auto -> toujours -> jamais -> auto
+function ShamanRotation_ClToggle()
+	local m = SH.CFG.clMode
+	local nxt = (m == "auto") and "on" or ((m == "on") and "off" or "auto")
+	SH.SetSetting("clMode", nxt)
+	local txt = { auto = "AUTO (economise la mana : plusieurs cibles, Clearcasting, Elemental Mastery, ou mana > " .. string.format("%.0f", SH.CFG.clMonoMana * 100) .. " %)",
+		on = "TOUJOURS (a chaque retour de recharge)", off = "JAMAIS" }
+	SH.Print("Chain Lightning : " .. txt[nxt])
+	if SH.RefreshOptions then SH.RefreshOptions() end
 end

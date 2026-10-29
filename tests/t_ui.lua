@@ -122,6 +122,6 @@ ok(SH.keyCap:IsShown(), "clic sur le bouton : capture ouverte")
 press("ESCAPE")
 -- menu : liaison
 ok(type(ShamanRotation_OpenMenu) == "function", "fonction ShamanRotation_OpenMenu (liaison Ouvrir le menu)")
-eq(table.getn(SH.KEYROWS), 6, "6 actions liables (dont Poser tous les totems)")
+eq(table.getn(SH.KEYROWS), 7, "7 actions liables (dont Chain Lightning)")
 
 DONE()

@@ -58,3 +58,11 @@ Earth Shock 5,0 % (2,25/min) ; Flame Shock 4,1 % (5,6/min) ; Molten Blast 1,5 % 
   Windfury, Tremor, purification, Searing, Magma : rayon non verifie, non surveilles.
 * Methode (aucune API 1.12 pour la position d'un totem ; CallOfElements de shaga ne mesure pas la distance, il suit des minuteurs) : le totem apparait sur les plaques de nom a moins de 8 m juste apres la pose ;
   on retient son GUID, UnitXP("distanceBetween","player",guid) donne la distance, UnitExists / UnitIsDead disent s'il est detruit. Demande UnitXP + SuperWoW + plaques de nom amicales.
+
+## Chain Lightning et la mana (2026-10-29)
+* Serveur : Chain Lightning r4 = 605 mana, 2,5 s d'incantation, recharge 6 s, 3 cibles, -30 % a chaque saut ; Lightning Bolt r9 = 210 mana, 3,0 s. Talents Elementaire : Lightning Mastery 5/5 = -1,0 s d'incantation sur les deux
+  (LB 2,0 s, CL 1,5 s) ; Convection 5/5 = -10 % de cout.
+* Logs (meilleur parse, MC / Majordomo, plusieurs cibles) : moyenne par coup Lightning Bolt 1427, Chain Lightning 1221 (coups de saut compris). Avec les couts du serveur et -10 % (Convection) : LB ~ 7,5 degats / mana ;
+  CL ~ 2,2 par coup, donc ~ 2,2 sur UNE cible et ~ 6,7 sur 3 cibles. Une seule cible : CL rapporte ~ 3 fois moins par mana (APPROXIMATION : un seul parse, plusieurs cibles) ; a 3 cibles : a egalite avec LB et beaucoup plus de DPS.
+* Decision : clMode auto (defaut) = Chain Lightning seulement a 2+ ennemis proches de la cible, sous Clearcasting, sous Elemental Mastery, ou tant que la mana > clMonoMana (60 %, a ajuster) ; "on" = a chaque recharge ; "off" = jamais.
+  Le seuil de 60 % est un REGLAGE, pas une valeur mesuree.

@@ -3,6 +3,7 @@
 	<Binding name="SHAMANROT_BURST" runOnUp="false">ShamanRotation_Burst()</Binding>
 	<Binding name="SHAMANROT_TOTEMS" runOnUp="false">ShamanRotation_Totems()</Binding>
 	<Binding name="SHAMANROT_TOTEMS4" runOnUp="false">ShamanRotation_TotemsAll()</Binding>
+	<Binding name="SHAMANROT_CL" runOnUp="false">ShamanRotation_ClToggle()</Binding>
 	<Binding name="SHAMANROT_AOE" runOnUp="false">ShamanRotation_AoeToggle()</Binding>
 	<Binding name="SHAMANROT_MENU" runOnUp="false">ShamanRotation_OpenMenu()</Binding>
 </Bindings>
